@@ -58,19 +58,33 @@ func (self *EventDispatcher) Emit(eventName string, eventData string) {
 
 	for _, handler := range self.handlers[eventName] {
 		if handler != nil {
-			handler <- eventData
+			go func() {
+				handler <- eventData
+			}()
 		}
 	}
 }
 
-type SkypeConnection chan string
+type SkypeConnection struct {
+	incoming chan string
+	outgoing chan string
+}
+
+func MakeSkypeConnection() *SkypeConnection {
+	return &SkypeConnection{
+		incoming: make(chan string),
+		outgoing: make(chan string),
+	}
+}
 
 // skypeMessageReader parses lines from an io.Reader and places them into a SkypeConnection.
-func skypeMessageReader(sc SkypeConnection, r io.Reader) error {
+// from the network to this client.
+func skypeMessageReader(sc *SkypeConnection, r io.Reader) error {
 	rr := bufio.NewReader(r)
 	for {
 		line, e := rr.ReadString('\n')
 		if e == io.EOF {
+			log.Printf("reader: eof")
 			return nil
 		}
 		if e != nil {
@@ -79,15 +93,18 @@ func skypeMessageReader(sc SkypeConnection, r io.Reader) error {
 		}
 		
 		line = strings.TrimRight(line, "\r\n")
-		sc <- line
+		log.Printf("Putting line: " + line)
+		sc.incoming <- line
+		log.Printf("Put line:     " + line)
 	}
 	return nil
 }
 
 // skypeMessageWriter places outgoing messages from an io.Writer into a SkypeConnection.
-func skypeMessageWriter(sc SkypeConnection, w io.Writer) error {
+// from this client to the network.
+func skypeMessageWriter(sc *SkypeConnection, w io.Writer) error {
 	ww := bufio.NewWriter(w)
-	for line := range sc {
+	for line := range sc.outgoing {
 		towrite := fmt.Sprintf("%s\r\n", strings.TrimRight(line, "\r\n"))
 		n, e := ww.WriteString(towrite)
 		if e != nil {
@@ -106,43 +123,44 @@ func skypeMessageWriter(sc SkypeConnection, w io.Writer) error {
 	return nil
 }
 
-func MakeTLSSkypeConnection(host string, port int) (SkypeConnection, error) {
+func MakeTLSSkypeConnection(host string, port int) (*SkypeConnection, error) {
 	connString := fmt.Sprintf("%s:%d", host, port)
 	conn, e := tls.Dial("tcp", connString, &tls.Config{InsecureSkipVerify: true}) // TODO(wb):verify
 	if e != nil {
 		return nil, e
 	}
 	
-	sc := make(SkypeConnection)
+	sc := MakeSkypeConnection()
 	go skypeMessageReader(sc, conn)
 	go skypeMessageWriter(sc, conn)
 	return sc, nil
 }
 
 // MakeTCPSkypeConnection creates a connection to a Skype proxy using unencrypted TCP.
-func MakeTCPSkypeConnection(host string, port int) (SkypeConnection, error) {
+func MakeTCPSkypeConnection(host string, port int) (*SkypeConnection, error) {
 	connString := fmt.Sprintf("%s:%d", host, port)
 	conn, e := net.Dial("tcp", connString)
 	if e != nil {
 		return nil, e
 	}
 	
-	sc := make(SkypeConnection)
+	sc := MakeSkypeConnection()
 	go skypeMessageReader(sc, conn)
 	go skypeMessageWriter(sc, conn)
 	return sc, nil
 }
 
-func MakeFileStubbedSkypeConnection(filename string) (SkypeConnection, error) {
+func MakeFileStubbedSkypeConnection(filename string) (*SkypeConnection, error) {
 	f, e := os.Open(filename)
 	if e != nil {
 		return nil, e
 	}
+	sc := MakeSkypeConnection()
 
-	sc := make(SkypeConnection)
 	go skypeMessageReader(sc, f)
 	go func() {
-		for line := range sc {
+//		for _ = range sc.outgoing {
+		for line := range sc.outgoing {
 			log.Printf("<<[%d] (stubbed write) '%s'", len(line), strings.TrimRight(line, "\r\n"))
 		}
 	}()
@@ -150,7 +168,7 @@ func MakeFileStubbedSkypeConnection(filename string) (SkypeConnection, error) {
 }
 
 type Client struct {
-	conn SkypeConnection
+	conn *SkypeConnection
 
 	users        map[string]*User
 	groups       map[string]*Group
@@ -160,7 +178,7 @@ type Client struct {
 	events *EventDispatcher
 }
 
-func MakeClient(config *Config, conn SkypeConnection) (*Client, error) {
+func MakeClient(config *Config, conn *SkypeConnection) (*Client, error) {
 	client := Client{
 		conn:         conn,
 		users:        make(map[string]*User),
@@ -179,7 +197,7 @@ func MakeClient(config *Config, conn SkypeConnection) (*Client, error) {
 
 
 func (self *Client) WriteLine(line string) error {
-	self.conn <- line + "\n"
+	self.conn.outgoing <- line + "\n"
 	return nil
 }
 
@@ -227,6 +245,7 @@ func (self *Client) setupInternalHandlers() error {
 			self.events.Emit("recv.CHATMESSAGE", line)
 		} else if len(line) > 5 && line[:5] == "CHAT " {
 			self.events.Emit("recv.CHAT", line)
+			log.Printf("MNM4: " + line)
 		}
 	}))
 
@@ -331,6 +350,8 @@ func (self *Client) setupInternalHandlers() error {
 	}))
 
 	self.events.RegisterHandler("recv.CHAT", makeHandler(func(line string) {
+		log.Printf("MNM3: " + line)
+
 		var id string
 		if n, e := fmt.Sscanf(line, "CHAT %s", &id); e != nil {
 			return
@@ -365,7 +386,7 @@ func (self *Client) setupInternalHandlers() error {
 }
 
 func (self *Client) ServeForever() error {
-	for line := range self.conn {
+	for line := range self.conn.incoming {
 		self.events.Emit("recv", line)
 	}
 	return nil
@@ -375,8 +396,10 @@ func (self *Client) ServeForDuration(duration time.Duration) error {
 	var line string
 	for {
 		select {
-		case line = <- self.conn:
+		case line = <- self.conn.incoming:
+			log.Printf("Emitting line: " + line)
 			self.events.Emit("recv", line)
+			log.Printf("Emitted: " + line)
 		case <- time.After(duration):
 			return nil
 		}

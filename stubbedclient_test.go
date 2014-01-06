@@ -26,7 +26,7 @@ func Test(t *testing.T) {
 		return
 	}
 
-	client.ServeForDuration(2 * time.Second)
+	client.ServeForDuration(5 * time.Second)
 
 	client.DumpUsers(os.Stdout)
 	client.DumpGroups(os.Stdout)
