@@ -1,7 +1,7 @@
 package gsi
 
 import "fmt"
-import "log"
+import "strings"
 
 type UnexpectedNumberOfFieldsError struct {
 	s string
@@ -734,29 +734,29 @@ func (self *Call) parseSet(s string) error {
 type Chat struct {
 	Id                 string
 	DialogPartner      string
-	Passwordhint       string
-	Options            string // TODO(wb): could be a list?
+	Passwordhint       string // string may contain space
+	Options            string // integer
 	Applicants         string // TODO(wb): could be a list?
 	Bookmarked         string
-	Recentchatmessages   string
-	Chatname           string
+	Recentchatmessages []string  // ,-separated list
+	Chatname           string // string may contain space
 	Adder              string
 	ActivityTimestamp  string
-	Posters              string
+	Posters            []string  // space-separated list
 	Status             string
 	Guidelines         string // TODO(wb): could be a list?
-	Topicxml           string
+	Topicxml           string // string may contain space
 	Mystatus           string
 	Memberobjects      string // TODO(wb): could be a list?
-	Friendlyname       string
-	Activemembers        string
-	Description        string
+	Friendlyname       string // string may contain space
+	Activemembers      []string  // space-separated list
+	Description        string // string may contain space
 	Timestamp          string
-	Chatmessages         string
-	Topic              string
+	Chatmessages       []string  // ,-separated list
+	Topic              string // string may contain space
 	Role               string
 	Blob               string
-	Members              string
+	Members            []string  // space-separated list
 	Myrole             string
 }
 
@@ -771,12 +771,16 @@ func (self *Chat) parseSetDialogPartner(s string) error {
 }
 
 func (self *Chat) parseSetPasswordhint(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s PASSWORDHINT %s", &__, &self.Passwordhint); e != nil {
+	var id string
+	if n, e := fmt.Sscanf(s, "CHAT %s PASSWORDHINT ", &id); e != nil {
 		return e
-	} else if n != 2 {
+	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
+
+	remainder := s[len(fmt.Sprintf("CHAT %s PASSWORDHINT ", id)):]
+	self.Passwordhint = strings.TrimRight(remainder, "\r\n\t ")
+
 	return nil
 }
 
@@ -811,22 +815,30 @@ func (self *Chat) parseSetBookmarked(s string) error {
 }
 
 func (self *Chat) parseSetRecentchatmessages(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s RECENTCHATMESSAGES %s", &__, &self.Recentchatmessages); e != nil {
+	var id string
+	if n, e := fmt.Sscanf(s, "CHAT %s RECENTCHATMESSAGES ", &id); e != nil {
 		return e
-	} else if n != 2 {
+	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
+
+	remainder := s[len(fmt.Sprintf("CHAT %s RECENTCHATMESSAGES ", id)):]
+	self.Recentchatmessages = strings.Split(remainder, ", ")	
+
 	return nil
 }
 
 func (self *Chat) parseSetChatname(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s CHATNAME %s", &__, &self.Chatname); e != nil {
+	var id string
+	if n, e := fmt.Sscanf(s, "CHAT %s CHATNAME ", &id); e != nil {
 		return e
-	} else if n != 2 {
+	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
+
+	remainder := s[len(fmt.Sprintf("CHAT %s CHATNAME ", id)):]
+	self.Chatname = strings.TrimRight(remainder, "\r\n\t ")
+
 	return nil
 }
 
@@ -851,12 +863,16 @@ func (self *Chat) parseSetActivityTimestamp(s string) error {
 }
 
 func (self *Chat) parseSetPosters(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s POSTERS %s", &__, &self.Posters); e != nil {
+	var id string
+	if n, e := fmt.Sscanf(s, "CHAT %s POSTERS ", &id); e != nil {
 		return e
-	} else if n != 2 {
+	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
+
+	remainder := s[len(fmt.Sprintf("CHAT %s POSTERS ", id)):]
+	self.Posters = strings.Split(remainder, ", ")	
+
 	return nil
 }
 
@@ -881,12 +897,16 @@ func (self *Chat) parseSetGuidelines(s string) error {
 }
 
 func (self *Chat) parseSetTopicxml(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s TOPICXML %s", &__, &self.Topicxml); e != nil {
+	var id string
+	if n, e := fmt.Sscanf(s, "CHAT %s TOPICXML ", &id); e != nil {
 		return e
-	} else if n != 2 {
+	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
+
+	remainder := s[len(fmt.Sprintf("CHAT %s TOPICXML ", id)):]
+	self.Topicxml = strings.TrimRight(remainder, "\r\n\t ")
+
 	return nil
 }
 
@@ -911,32 +931,44 @@ func (self *Chat) parseSetMemberobjects(s string) error {
 }
 
 func (self *Chat) parseSetFriendlyname(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s FRIENDLYNAME %s", &__, &self.Friendlyname); e != nil {
+	var id string
+	if n, e := fmt.Sscanf(s, "CHAT %s FRIENDLYNAME ", &id); e != nil {
 		return e
-	} else if n != 2 {
+	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
+
+	remainder := s[len(fmt.Sprintf("CHAT %s FRIENDLYNAME ", id)):]
+	self.Friendlyname = strings.TrimRight(remainder, "\r\n\t ")
+
 	return nil
 }
 
 func (self *Chat) parseSetActivemembers(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s ACTIVEMEMBERS %s", &__, &self.Activemembers); e != nil {
+	var id string
+	if n, e := fmt.Sscanf(s, "CHAT %s ACTIVEMEMBERS ", &id); e != nil {
 		return e
-	} else if n != 2 {
+	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
+
+	remainder := s[len(fmt.Sprintf("CHAT %s ACTIVEMEMBERS ", id)):]
+	self.Activemembers = strings.Split(remainder, " ")	
+
 	return nil
 }
 
 func (self *Chat) parseSetDescription(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s DESCRIPTION %s", &__, &self.Description); e != nil {
+	var id string
+	if n, e := fmt.Sscanf(s, "CHAT %s DESCRIPTION ", &id); e != nil {
 		return e
-	} else if n != 2 {
+	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
+
+	remainder := s[len(fmt.Sprintf("CHAT %s DESCRIPTION ", id)):]
+	self.Description = strings.TrimRight(remainder, "\r\n\t ")
+
 	return nil
 }
 
@@ -951,22 +983,30 @@ func (self *Chat) parseSetTimestamp(s string) error {
 }
 
 func (self *Chat) parseSetChatmessages(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s CHATMESSAGES %s", &__, &self.Chatmessages); e != nil {
+	var id string
+	if n, e := fmt.Sscanf(s, "CHAT %s CHATMESSAGES ", &id); e != nil {
 		return e
-	} else if n != 2 {
+	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
+
+	remainder := s[len(fmt.Sprintf("CHAT %s CHATMESSAGES ", id)):]
+	self.Chatmessages = strings.Split(remainder, ", ")	
+
 	return nil
 }
 
 func (self *Chat) parseSetTopic(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s TOPIC %s", &__, &self.Topic); e != nil {
+	var id string
+	if n, e := fmt.Sscanf(s, "CHAT %s TOPIC ", &id); e != nil {
 		return e
-	} else if n != 2 {
+	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
+
+	remainder := s[len(fmt.Sprintf("CHAT %s TOPIC ", id)):]
+	self.Topic = strings.TrimRight(remainder, "\r\n\t ")
+
 	return nil
 }
 
@@ -991,12 +1031,16 @@ func (self *Chat) parseSetBlob(s string) error {
 }
 
 func (self *Chat) parseSetMembers(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s MEMBERS %s", &__, &self.Members); e != nil {
+	var id string
+	if n, e := fmt.Sscanf(s, "CHAT %s MEMBERS ", &id); e != nil {
 		return e
-	} else if n != 2 {
+	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
+
+	remainder := s[len(fmt.Sprintf("CHAT %s MEMBERS ", id)):]
+	self.Members = strings.Split(remainder, " ")	
+
 	return nil
 }
 
@@ -1041,13 +1085,11 @@ func (self *Chat) getFetchAllFieldsCommands() ([]string, error) {
 
 func (self *Chat) parseSet(s string) error {
 	var field_to_set string
-	log.Print("MNM: '" + "CHAT "+self.Id+" %s'")
 	if n, e := fmt.Sscanf(s, "CHAT "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
 		return &UnexpectedNumberOfFieldsError{s: s}
 	}
-	log.Print("MNM2: '" + field_to_set + "'")
 	if "DIALOG_PARTNER" == field_to_set {
 		return self.parseSetDialogPartner(s)
 	}

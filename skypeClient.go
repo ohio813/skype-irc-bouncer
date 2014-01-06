@@ -93,9 +93,7 @@ func skypeMessageReader(sc *SkypeConnection, r io.Reader) error {
 		}
 		
 		line = strings.TrimRight(line, "\r\n")
-		log.Printf("Putting line: " + line)
 		sc.incoming <- line
-		log.Printf("Put line:     " + line)
 	}
 	return nil
 }
@@ -195,7 +193,6 @@ func MakeClient(config *Config, conn *SkypeConnection) (*Client, error) {
 	return &client, nil
 }
 
-
 func (self *Client) WriteLine(line string) error {
 	self.conn.outgoing <- line + "\n"
 	return nil
@@ -245,7 +242,6 @@ func (self *Client) setupInternalHandlers() error {
 			self.events.Emit("recv.CHATMESSAGE", line)
 		} else if len(line) > 5 && line[:5] == "CHAT " {
 			self.events.Emit("recv.CHAT", line)
-			log.Printf("MNM4: " + line)
 		}
 	}))
 
@@ -350,8 +346,6 @@ func (self *Client) setupInternalHandlers() error {
 	}))
 
 	self.events.RegisterHandler("recv.CHAT", makeHandler(func(line string) {
-		log.Printf("MNM3: " + line)
-
 		var id string
 		if n, e := fmt.Sscanf(line, "CHAT %s", &id); e != nil {
 			return
@@ -399,7 +393,6 @@ func (self *Client) ServeForDuration(duration time.Duration) error {
 		case line = <- self.conn.incoming:
 			log.Printf("Emitting line: " + line)
 			self.events.Emit("recv", line)
-			log.Printf("Emitted: " + line)
 		case <- time.After(duration):
 			return nil
 		}

@@ -4,6 +4,7 @@ import "os"
 import "io"
 import "time"
 import "bufio"
+import "strings"
 import "testing"
 
 func Test(t *testing.T) {
@@ -132,32 +133,33 @@ func (self *Client) DumpChats(writer io.Writer) {
 	w.WriteString("CHAT" + "\n")
 	for id, chat := range self.chats {
 		w.WriteString("  " + id + "\n")
-		w.WriteString("    Id :" + chat.Id + "\n")
-		w.WriteString("    DialogPartner :" + chat.DialogPartner + "\n")
-		w.WriteString("    Passwordhint :" + chat.Passwordhint + "\n")
-		w.WriteString("    Options :" + chat.Options + "\n")
-		w.WriteString("    Applicants :" + chat.Applicants + "\n")
-		w.WriteString("    Bookmarked :" + chat.Bookmarked + "\n")
-		w.WriteString("    Recentchatmessages :" + chat.Recentchatmessages + "\n")
-		w.WriteString("    Chatname :" + chat.Chatname + "\n")
-		w.WriteString("    Adder :" + chat.Adder + "\n")
-		w.WriteString("    ActivityTimestamp :" + chat.ActivityTimestamp + "\n")
-		w.WriteString("    Posters :" + chat.Posters + "\n")
-		w.WriteString("    Status :" + chat.Status + "\n")
-		w.WriteString("    Guidelines :" + chat.Guidelines + "\n")
-		w.WriteString("    Topicxml :" + chat.Topicxml + "\n")
-		w.WriteString("    Mystatus :" + chat.Mystatus + "\n")
-		w.WriteString("    Memberobjects :" + chat.Memberobjects + "\n")
-		w.WriteString("    Friendlyname :" + chat.Friendlyname + "\n")
-		w.WriteString("    Activemembers :" + chat.Activemembers + "\n")
-		w.WriteString("    Description :" + chat.Description + "\n")
-		w.WriteString("    Timestamp :" + chat.Timestamp + "\n")
-		w.WriteString("    Chatmessages :" + chat.Chatmessages + "\n")
-		w.WriteString("    Topic :" + chat.Topic + "\n")
-		w.WriteString("    Role :" + chat.Role + "\n")
-		w.WriteString("    Blob :" + chat.Blob + "\n")
-		w.WriteString("    Members :" + chat.Members + "\n")
-		w.WriteString("    Myrole :" + chat.Myrole + "\n")
+		w.WriteString("    Id: " + chat.Id + "\n")
+		w.WriteString("    DialogPartner: " + chat.DialogPartner + "\n")
+		w.WriteString("    Passwordhint: '" + chat.Passwordhint + "'\n")
+		w.WriteString("    Options: " + chat.Options + "\n")
+		w.WriteString("    Applicants: " + chat.Applicants + "\n")
+		w.WriteString("    Bookmarked: " + chat.Bookmarked + "\n")
+		w.WriteString("    Recentchatmessages: " + strings.Join(chat.Recentchatmessages, ", ") + "\n")
+		w.WriteString("    Chatname: '" + chat.Chatname + "'\n")
+		w.WriteString("    Adder: " + chat.Adder + "\n")
+		w.WriteString("    ActivityTimestamp: " + chat.ActivityTimestamp + "\n")
+		w.WriteString("    Posters: " + strings.Join(chat.Posters, ", ") + "\n")
+		w.WriteString("    Status: " + chat.Status + "\n")
+		w.WriteString("    Guidelines: " + chat.Guidelines + "\n")
+		w.WriteString("    Topicxml: '" + chat.Topicxml + "'\n")
+		w.WriteString("    Mystatus: " + chat.Mystatus + "\n")
+		w.WriteString("    Memberobjects: " + chat.Memberobjects + "\n")
+		w.WriteString("    Friendlyname: '" + chat.Friendlyname + "'\n")
+		w.WriteString("    Activemembers: " + strings.Join(chat.Activemembers, ", ") + "\n")
+		w.WriteString("    Description: '" + chat.Description + "'\n")
+		w.WriteString("    Timestamp: " + chat.Timestamp + "\n")
+		w.WriteString("    Chatmessages: " + strings.Join(chat.Chatmessages, ", ") + "\n")
+		w.WriteString("    Topic: '" + chat.Topic + "'\n")
+		w.WriteString("    Role: " + chat.Role + "\n")
+		w.WriteString("    Blob: " + chat.Blob + "\n")
+		w.WriteString("    Members: " + strings.Join(chat.Members, ", ") + "\n")
+		w.WriteString("    Myrole: " + chat.Myrole + "\n")
 	}
 	w.Flush()
 }
+
