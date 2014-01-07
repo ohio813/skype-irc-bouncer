@@ -7,6 +7,41 @@ import "strings"
 var UnexpectedNumberOfFieldsError = errors.New("Encountered an unexpected number of fields to parse")
 var ParserForFieldDoesNotExist = errors.New("Parser for the given field does not exist")
 
+func getSkypeMessageSetSimpleString(t string, f string, s string) (string, error) {
+	var __ string
+	var ret string
+	if n, e := fmt.Sscanf(s, t + " %s " + f + " %s", &__, &ret); e != nil {
+		return "", e
+	} else if n != 2 {
+		return "", UnexpectedNumberOfFieldsError
+	}
+	return ret, nil
+}
+
+func getSkypeMessageSetComplexString(t string, f string, s string) (string, error) {
+	var id string
+	if n, e := fmt.Sscanf(s, t + " %s " + f + " ", &id); e != nil {
+		return "", e
+	} else if n != 1 {
+		return "", UnexpectedNumberOfFieldsError
+	}
+
+	remainder := s[len(fmt.Sprintf(t + " %s " + f + " ", id)):]
+	return strings.TrimRight(remainder, "\r\n\t "), nil
+}
+
+func getSkypeMessageSetList(t string, f string, s string, sep string) ([]string, error) {
+	var id string
+	if n, e := fmt.Sscanf(s, t + " %s " + f + " ", &id); e != nil {
+		return []string{}, e
+	} else if n != 1 {
+		return []string{}, UnexpectedNumberOfFieldsError
+	}
+
+	remainder := s[len(fmt.Sprintf(t + " %s " + f + " ", id)):]
+	return strings.Split(remainder, sep), nil
+}
+
 type Aec struct {
 	Id string
 }
@@ -748,337 +783,6 @@ type Chat struct {
 	Myrole             string
 }
 
-func (self *Chat) parseSetDialogPartner(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s DIALOG_PARTNER %s", &__, &self.DialogPartner); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetPasswordhint(s string) error {
-	var id string
-	if n, e := fmt.Sscanf(s, "CHAT %s PASSWORDHINT ", &id); e != nil {
-		return e
-	} else if n != 1 {
-		return UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf("CHAT %s PASSWORDHINT ", id)):]
-	self.Passwordhint = strings.TrimRight(remainder, "\r\n\t ")
-
-	return nil
-}
-
-func (self *Chat) parseSetOptions(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s OPTIONS %s", &__, &self.Options); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetApplicants(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s APPLICANTS %s", &__, &self.Applicants); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetBookmarked(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s BOOKMARKED %s", &__, &self.Bookmarked); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetRecentchatmessages(s string) error {
-	var id string
-	if n, e := fmt.Sscanf(s, "CHAT %s RECENTCHATMESSAGES ", &id); e != nil {
-		return e
-	} else if n != 1 {
-		return UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf("CHAT %s RECENTCHATMESSAGES ", id)):]
-	self.Recentchatmessages = strings.Split(remainder, ", ")	
-
-	return nil
-}
-
-func (self *Chat) parseSetChatname(s string) error {
-	var id string
-	if n, e := fmt.Sscanf(s, "CHAT %s CHATNAME ", &id); e != nil {
-		return e
-	} else if n != 1 {
-		return UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf("CHAT %s CHATNAME ", id)):]
-	self.Chatname = strings.TrimRight(remainder, "\r\n\t ")
-
-	return nil
-}
-
-func (self *Chat) parseSetAdder(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s ADDER %s", &__, &self.Adder); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetActivityTimestamp(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s ACTIVITY_TIMESTAMP %s", &__, &self.ActivityTimestamp); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetPosters(s string) error {
-	var id string
-	if n, e := fmt.Sscanf(s, "CHAT %s POSTERS ", &id); e != nil {
-		return e
-	} else if n != 1 {
-		return UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf("CHAT %s POSTERS ", id)):]
-	self.Posters = strings.Split(remainder, ", ")	
-
-	return nil
-}
-
-func (self *Chat) parseSetStatus(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s STATUS %s", &__, &self.Status); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetGuidelines(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s GUIDELINES %s", &__, &self.Guidelines); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetTopicxml(s string) error {
-	var id string
-	if n, e := fmt.Sscanf(s, "CHAT %s TOPICXML ", &id); e != nil {
-		return e
-	} else if n != 1 {
-		return UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf("CHAT %s TOPICXML ", id)):]
-	self.Topicxml = strings.TrimRight(remainder, "\r\n\t ")
-
-	return nil
-}
-
-func (self *Chat) parseSetMystatus(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s MYSTATUS %s", &__, &self.Mystatus); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetMemberobjects(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s MEMBEROBJECTS %s", &__, &self.Memberobjects); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetFriendlyname(s string) error {
-	var id string
-	if n, e := fmt.Sscanf(s, "CHAT %s FRIENDLYNAME ", &id); e != nil {
-		return e
-	} else if n != 1 {
-		return UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf("CHAT %s FRIENDLYNAME ", id)):]
-	self.Friendlyname = strings.TrimRight(remainder, "\r\n\t ")
-
-	return nil
-}
-
-func (self *Chat) parseSetActivemembers(s string) error {
-	var id string
-	if n, e := fmt.Sscanf(s, "CHAT %s ACTIVEMEMBERS ", &id); e != nil {
-		return e
-	} else if n != 1 {
-		return UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf("CHAT %s ACTIVEMEMBERS ", id)):]
-	self.Activemembers = strings.Split(remainder, " ")	
-
-	return nil
-}
-
-
-
-func getSkypeMessageSetSimpleString(t string, f string, s string) (string, error) {
-	var __ string
-	var ret string
-	if n, e := fmt.Sscanf(s, t + " %s " + f + " %s", &__, &ret); e != nil {
-		return "", e
-	} else if n != 2 {
-		return "", UnexpectedNumberOfFieldsError
-	}
-	return ret, nil
-}
-
-func getSkypeMessageSetComplexString(t string, f string, s string) (string, error) {
-	var id string
-	if n, e := fmt.Sscanf(s, t + " %s " + f + " ", &id); e != nil {
-		return "", e
-	} else if n != 1 {
-		return "", UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf(t + " %s " + f + " ", id)):]
-	return strings.TrimRight(remainder, "\r\n\t "), nil
-}
-
-func getSkypeMessageSetList(t string, f string, s string, sep string) ([]string, error) {
-	var id string
-	if n, e := fmt.Sscanf(s, t + " %s " + f + " ", &id); e != nil {
-		return []string{}, e
-	} else if n != 1 {
-		return []string{}, UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf(t + " %s " + f + " ", id)):]
-	return strings.Split(remainder, sep), nil
-}
-
-func (self *Chat) parseSetDescription(s string) error {
-	var id string
-	if n, e := fmt.Sscanf(s, "CHAT %s DESCRIPTION ", &id); e != nil {
-		return e
-	} else if n != 1 {
-		return UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf("CHAT %s DESCRIPTION ", id)):]
-	self.Description = strings.TrimRight(remainder, "\r\n\t ")
-
-	return nil
-}
-
-func (self *Chat) parseSetTimestamp(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s TIMESTAMP %s", &__, &self.Timestamp); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetChatmessages(s string) error {
-	var id string
-	if n, e := fmt.Sscanf(s, "CHAT %s CHATMESSAGES ", &id); e != nil {
-		return e
-	} else if n != 1 {
-		return UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf("CHAT %s CHATMESSAGES ", id)):]
-	self.Chatmessages = strings.Split(remainder, ", ")	
-
-	return nil
-}
-
-func (self *Chat) parseSetTopic(s string) error {
-	var id string
-	if n, e := fmt.Sscanf(s, "CHAT %s TOPIC ", &id); e != nil {
-		return e
-	} else if n != 1 {
-		return UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf("CHAT %s TOPIC ", id)):]
-	self.Topic = strings.TrimRight(remainder, "\r\n\t ")
-
-	return nil
-}
-
-func (self *Chat) parseSetRole(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s ROLE %s", &__, &self.Role); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetBlob(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s BLOB %s", &__, &self.Blob); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
-func (self *Chat) parseSetMembers(s string) error {
-	var id string
-	if n, e := fmt.Sscanf(s, "CHAT %s MEMBERS ", &id); e != nil {
-		return e
-	} else if n != 1 {
-		return UnexpectedNumberOfFieldsError
-	}
-
-	remainder := s[len(fmt.Sprintf("CHAT %s MEMBERS ", id)):]
-	self.Members = strings.Split(remainder, " ")	
-
-	return nil
-}
-
-func (self *Chat) parseSetMyrole(s string) error {
-	var __ string
-	if n, e := fmt.Sscanf(s, "CHAT %s MYROLE %s", &__, &self.Myrole); e != nil {
-		return e
-	} else if n != 2 {
-		return UnexpectedNumberOfFieldsError
-	}
-	return nil
-}
-
 func (self *Chat) getFetchAllFieldsCommands() ([]string, error) {
 	return []string{
 		"GET CHAT " + self.Id + " DIALOG_PARTNER",
@@ -1115,83 +819,164 @@ func (self *Chat) parseSet(s string) error {
 	} else if n != 1 {
 		return UnexpectedNumberOfFieldsError
 	}
-	if "DIALOG_PARTNER" == field_to_set {
-		return self.parseSetDialogPartner(s)
+	
+	switch field_to_set {
+	case "DIALOG_PARTNER":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "DIALOG_PARTNER", s)
+		if e != nil {
+			return e
+		}
+		self.DialogPartner = ret
+	case "PASSWORDHINT":
+		ret, e := getSkypeMessageSetComplexString("CHAT", "PASSWORDHINT", s)
+		if e != nil {
+			return e
+		}
+		self.Passwordhint = ret
+	case "OPTIONS":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "OPTIONS", s)
+		if e != nil {
+			return e
+		}
+		self.Options = ret
+	case "Applicants":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "APPLICANTS", s)
+		if e != nil {
+			return e
+		}
+		self.Applicants = ret
+	case "BOOKMARKED":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "BOOKMARKED", s)
+		if e != nil {
+			return e
+		}
+		self.Bookmarked = ret
+	case "RECENTCHATMESSAGES":
+		ret, e := getSkypeMessageSetList("CHAT", "RECENTCHATMESSAGES", s, ", ")
+		if e != nil {
+			return e
+		}
+		self.Recentchatmessages = ret
+	case "CHATNAME":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "CHATNAME", s)
+		if e != nil {
+			return e
+		}
+		self.Chatname = ret
+	case "ADDER":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "ADDER", s)
+		if e != nil {
+			return e
+		}
+		self.Adder = ret
+	case "ACTIVITY_TIMESTAMP":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "ACTIVITY_TIMESTAMP", s)
+		if e != nil {
+			return e
+		}
+		self.ActivityTimestamp = ret
+	case "POSTERS":
+		ret, e := getSkypeMessageSetList("CHAT", "POSTERS", s, " ")
+		if e != nil {
+			return e
+		}
+		self.Posters = ret
+	case "STATUS":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "STATUS", s)
+		if e != nil {
+			return e
+		}
+		self.Status = ret
+	case "GUIDELINES":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "GUIDELINES", s)
+		if e != nil {
+			return e
+		}
+		self.Guidelines = ret
+	case "TOPICXML":
+		ret, e := getSkypeMessageSetComplexString("CHAT", "TOPICXML", s)
+		if e != nil {
+			return e
+		}
+		self.Topicxml = ret
+	case "MYSTATUS":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "MYSTATUS", s)
+		if e != nil {
+			return e
+		}
+		self.Mystatus = ret
+	case "MEMBEROBJECTS":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "MEMBEROBJECTS", s)
+		if e != nil {
+			return e
+		}
+		self.Memberobjects = ret
+	case "FRIENDLYNAME":
+		ret, e := getSkypeMessageSetComplexString("CHAT", "FRIENDLYNAME", s)
+		if e != nil {
+			return e
+		}
+		self.Friendlyname = ret
+	case "ACTIVEMEMBERS":
+		ret, e := getSkypeMessageSetList("CHAT", "ACTIVEMEMBERS", s, " ")
+		if e != nil {
+			return e
+		}
+		self.Activemembers = ret
+	case "DESCRIPTION":
+		ret, e := getSkypeMessageSetComplexString("CHAT", "DESCRIPTION", s)
+		if e != nil {
+			return e
+		}
+		self.Description = ret
+	case "TIMESTAMP":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "TIMESTAMP", s)
+		if e != nil {
+			return e
+		}
+		self.Timestamp = ret
+	case "CHATMESSAGES":
+		ret, e := getSkypeMessageSetList("CHAT", "CHATMESSAGES", s, ", ")
+		if e != nil {
+			return e
+		}
+		self.Chatmessages = ret
+	case "TOPIC":
+		ret, e := getSkypeMessageSetComplexString("CHAT", "TOPIC", s)
+		if e != nil {
+			return e
+		}
+		self.Topic = ret
+	case "ROLE":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "ROLE", s)
+		if e != nil {
+			return e
+		}
+		self.Role = ret
+	case "BLOB":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "BLOB", s)
+		if e != nil {
+			return e
+		}
+		self.Blob = ret
+	case "MEMBERS":
+		ret, e := getSkypeMessageSetList("CHAT", "MEMBERS", s, " ")
+		if e != nil {
+			return e
+		}
+		self.Members = ret
+	case "MYROLE":
+		ret, e := getSkypeMessageSetSimpleString("CHAT", "MYROLE", s)
+		if e != nil {
+			return e
+		}
+		self.Myrole = ret
+	default:
+		return ParserForFieldDoesNotExist
 	}
-	if "PASSWORDHINT" == field_to_set {
-		return self.parseSetPasswordhint(s)
-	}
-	if "OPTIONS" == field_to_set {
-		return self.parseSetOptions(s)
-	}
-	if "APPLICANTS" == field_to_set {
-		return self.parseSetApplicants(s)
-	}
-	if "BOOKMARKED" == field_to_set {
-		return self.parseSetBookmarked(s)
-	}
-	if "RECENTCHATMESSAGES" == field_to_set {
-		return self.parseSetRecentchatmessages(s)
-	}
-	if "CHATNAME" == field_to_set {
-		return self.parseSetChatname(s)
-	}
-	if "ADDER" == field_to_set {
-		return self.parseSetAdder(s)
-	}
-	if "ACTIVITY_TIMESTAMP" == field_to_set {
-		return self.parseSetActivityTimestamp(s)
-	}
-	if "POSTERS" == field_to_set {
-		return self.parseSetPosters(s)
-	}
-	if "STATUS" == field_to_set {
-		return self.parseSetStatus(s)
-	}
-	if "GUIDELINES" == field_to_set {
-		return self.parseSetGuidelines(s)
-	}
-	if "TOPICXML" == field_to_set {
-		return self.parseSetTopicxml(s)
-	}
-	if "MYSTATUS" == field_to_set {
-		return self.parseSetMystatus(s)
-	}
-	if "MEMBEROBJECTS" == field_to_set {
-		return self.parseSetMemberobjects(s)
-	}
-	if "FRIENDLYNAME" == field_to_set {
-		return self.parseSetFriendlyname(s)
-	}
-	if "ACTIVEMEMBERS" == field_to_set {
-		return self.parseSetActivemembers(s)
-	}
-	if "DESCRIPTION" == field_to_set {
-		return self.parseSetDescription(s)
-	}
-	if "TIMESTAMP" == field_to_set {
-		return self.parseSetTimestamp(s)
-	}
-	if "CHATMESSAGES" == field_to_set {
-		return self.parseSetChatmessages(s)
-	}
-	if "TOPIC" == field_to_set {
-		return self.parseSetTopic(s)
-	}
-	if "ROLE" == field_to_set {
-		return self.parseSetRole(s)
-	}
-	if "BLOB" == field_to_set {
-		return self.parseSetBlob(s)
-	}
-	if "MEMBERS" == field_to_set {
-		return self.parseSetMembers(s)
-	}
-	if "MYROLE" == field_to_set {
-		return self.parseSetMyrole(s)
-	}
-	return ParserForFieldDoesNotExist
+	return nil
 }
+
 
 type Chatmember struct {
 	Id       string
