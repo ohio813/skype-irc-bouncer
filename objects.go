@@ -1,23 +1,11 @@
 package gsi
 
 import "fmt"
+import "errors"
 import "strings"
 
-type UnexpectedNumberOfFieldsError struct {
-	s string
-}
-
-func (e *UnexpectedNumberOfFieldsError) Error() string {
-	return "Unexpected number of fields, line: '" + e.s + "'"
-}
-
-type ParserForFieldDoesNotExist struct {
-	field string
-}
-
-func (e *ParserForFieldDoesNotExist) Error() string {
-	return "Parser for field '" + e.field + "' does not exist"
-}
+var UnexpectedNumberOfFieldsError = errors.New("Encountered an unexpected number of fields to parse")
+var ParserForFieldDoesNotExist = errors.New("Parser for the given field does not exist")
 
 type Aec struct {
 	Id string
@@ -32,9 +20,9 @@ func (self *Aec) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "AEC "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Agc struct {
@@ -50,9 +38,9 @@ func (self *Agc) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "AGC "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Application struct {
@@ -69,7 +57,7 @@ func (self *Application) parseSetConnecting(s string) error {
 	if n, e := fmt.Sscanf(s, "APPLICATION %s CONNECTING %s", &__, &self.Connecting); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -79,7 +67,7 @@ func (self *Application) parseSetSending(s string) error {
 	if n, e := fmt.Sscanf(s, "APPLICATION %s SENDING %s", &__, &self.Sending); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -89,7 +77,7 @@ func (self *Application) parseSetStreams(s string) error {
 	if n, e := fmt.Sscanf(s, "APPLICATION %s STREAMS %s", &__, &self.Streams); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -99,7 +87,7 @@ func (self *Application) parseSetConnectable(s string) error {
 	if n, e := fmt.Sscanf(s, "APPLICATION %s CONNECTABLE %s", &__, &self.Connectable); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -109,7 +97,7 @@ func (self *Application) parseSetReceived(s string) error {
 	if n, e := fmt.Sscanf(s, "APPLICATION %s RECEIVED %s", &__, &self.Received); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -127,7 +115,7 @@ func (self *Application) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "APPLICATION "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	if "CONNECTING" == field_to_set {
 		return self.parseSetConnecting(s)
@@ -144,7 +132,7 @@ func (self *Application) parseSet(s string) error {
 	if "RECEIVED" == field_to_set {
 		return self.parseSetReceived(s)
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type AudioIn struct {
@@ -160,9 +148,9 @@ func (self *AudioIn) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "AUDIO_IN "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type AudioOut struct {
@@ -178,9 +166,9 @@ func (self *AudioOut) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "AUDIO_OUT "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Autoaway struct {
@@ -196,9 +184,9 @@ func (self *Autoaway) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "AUTOAWAY "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Avatar struct {
@@ -214,9 +202,9 @@ func (self *Avatar) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "AVATAR "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Call struct {
@@ -261,7 +249,7 @@ func (self *Call) parseSetVideoReceiveStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s VIDEO_RECEIVE_STATUS %s", &__, &self.VideoReceiveStatus); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -271,7 +259,7 @@ func (self *Call) parseSetVideoStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s VIDEO_STATUS %s", &__, &self.VideoStatus); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -281,7 +269,7 @@ func (self *Call) parseSetCanTransfer(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s CAN_TRANSFER %s", &__, &self.CanTransfer); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -291,7 +279,7 @@ func (self *Call) parseSetRateCurrency(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s RATE_CURRENCY %s", &__, &self.RateCurrency); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -301,7 +289,7 @@ func (self *Call) parseSetRatePrecision(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s RATE_PRECISION %s", &__, &self.RatePrecision); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -311,7 +299,7 @@ func (self *Call) parseSetRate(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s RATE %s", &__, &self.Rate); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -321,7 +309,7 @@ func (self *Call) parseSetTransferStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s TRANSFER_STATUS %s", &__, &self.TransferStatus); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -331,7 +319,7 @@ func (self *Call) parseSetSeen(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s SEEN %s", &__, &self.Seen); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -341,7 +329,7 @@ func (self *Call) parseSetDuration(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s DURATION %s", &__, &self.Duration); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -351,7 +339,7 @@ func (self *Call) parseSetPstnStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s PSTN_STATUS %s", &__, &self.PstnStatus); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -361,7 +349,7 @@ func (self *Call) parseSetVmAllowedDuration(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s VM_ALLOWED_DURATION %s", &__, &self.VmAllowedDuration); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -371,7 +359,7 @@ func (self *Call) parseSetFailurereason(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s FAILUREREASON %s", &__, &self.Failurereason); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -381,7 +369,7 @@ func (self *Call) parseSetVideoSendStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s VIDEO_SEND_STATUS %s", &__, &self.VideoSendStatus); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -391,7 +379,7 @@ func (self *Call) parseSetTargetIdentity(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s TARGET_IDENTITY %s", &__, &self.TargetIdentity); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -401,7 +389,7 @@ func (self *Call) parseSetTransferActive(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s TRANSFER_ACTIVE %s", &__, &self.TransferActive); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -411,7 +399,7 @@ func (self *Call) parseSetTransferredBy(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s TRANSFERRED_BY %s", &__, &self.TransferredBy); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -421,7 +409,7 @@ func (self *Call) parseSetStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s STATUS %s", &__, &self.Status); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -431,7 +419,7 @@ func (self *Call) parseSetVaaInputStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s VAA_INPUT_STATUS %s", &__, &self.VaaInputStatus); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -441,7 +429,7 @@ func (self *Call) parseSetPartnerHandle(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s PARTNER_HANDLE %s", &__, &self.PartnerHandle); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -451,7 +439,7 @@ func (self *Call) parseSetForwardedBy(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s FORWARDED_BY %s", &__, &self.ForwardedBy); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -461,7 +449,7 @@ func (self *Call) parseSetConfParticipantsCount(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s CONF_PARTICIPANTS_COUNT %s", &__, &self.ConfParticipantsCount); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -471,7 +459,7 @@ func (self *Call) parseSetConfParticipant(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s CONF_PARTICIPANT %s", &__, &self.ConfParticipant); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -481,7 +469,7 @@ func (self *Call) parseSetConfId(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s CONF_ID %s", &__, &self.ConfId); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -491,7 +479,7 @@ func (self *Call) parseSetTransferredTo(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s TRANSFERRED_TO %s", &__, &self.TransferredTo); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -501,7 +489,7 @@ func (self *Call) parseSetInput(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s INPUT %s", &__, &self.Input); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -511,7 +499,7 @@ func (self *Call) parseSetTimestamp(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s TIMESTAMP %s", &__, &self.Timestamp); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -521,7 +509,7 @@ func (self *Call) parseSetCaptureMic(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s CAPTURE_MIC %s", &__, &self.CaptureMic); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -531,7 +519,7 @@ func (self *Call) parseSetPstnNumber(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s PSTN_NUMBER %s", &__, &self.PstnNumber); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -541,7 +529,7 @@ func (self *Call) parseSetPartnerDispname(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s PARTNER_DISPNAME %s", &__, &self.PartnerDispname); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -551,7 +539,7 @@ func (self *Call) parseSetOutput(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s OUTPUT %s", &__, &self.Output); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -561,7 +549,7 @@ func (self *Call) parseSetVmDuration(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s VM_DURATION %s", &__, &self.VmDuration); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -571,7 +559,7 @@ func (self *Call) parseSetCallType(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s TYPE %s", &__, &self.CallType); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -581,7 +569,7 @@ func (self *Call) parseSetSubject(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL %s SUBJECT %s", &__, &self.Subject); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -627,7 +615,7 @@ func (self *Call) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "CALL "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	if "VIDEO_RECEIVE_STATUS" == field_to_set {
 		return self.parseSetVideoReceiveStatus(s)
@@ -728,7 +716,7 @@ func (self *Call) parseSet(s string) error {
 	if "SUBJECT" == field_to_set {
 		return self.parseSetSubject(s)
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Chat struct {
@@ -765,7 +753,7 @@ func (self *Chat) parseSetDialogPartner(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s DIALOG_PARTNER %s", &__, &self.DialogPartner); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -775,7 +763,7 @@ func (self *Chat) parseSetPasswordhint(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s PASSWORDHINT ", &id); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 
 	remainder := s[len(fmt.Sprintf("CHAT %s PASSWORDHINT ", id)):]
@@ -789,7 +777,7 @@ func (self *Chat) parseSetOptions(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s OPTIONS %s", &__, &self.Options); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -799,7 +787,7 @@ func (self *Chat) parseSetApplicants(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s APPLICANTS %s", &__, &self.Applicants); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -809,7 +797,7 @@ func (self *Chat) parseSetBookmarked(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s BOOKMARKED %s", &__, &self.Bookmarked); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -819,7 +807,7 @@ func (self *Chat) parseSetRecentchatmessages(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s RECENTCHATMESSAGES ", &id); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 
 	remainder := s[len(fmt.Sprintf("CHAT %s RECENTCHATMESSAGES ", id)):]
@@ -833,7 +821,7 @@ func (self *Chat) parseSetChatname(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s CHATNAME ", &id); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 
 	remainder := s[len(fmt.Sprintf("CHAT %s CHATNAME ", id)):]
@@ -847,7 +835,7 @@ func (self *Chat) parseSetAdder(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s ADDER %s", &__, &self.Adder); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -857,7 +845,7 @@ func (self *Chat) parseSetActivityTimestamp(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s ACTIVITY_TIMESTAMP %s", &__, &self.ActivityTimestamp); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -867,7 +855,7 @@ func (self *Chat) parseSetPosters(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s POSTERS ", &id); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 
 	remainder := s[len(fmt.Sprintf("CHAT %s POSTERS ", id)):]
@@ -881,7 +869,7 @@ func (self *Chat) parseSetStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s STATUS %s", &__, &self.Status); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -891,7 +879,7 @@ func (self *Chat) parseSetGuidelines(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s GUIDELINES %s", &__, &self.Guidelines); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -901,7 +889,7 @@ func (self *Chat) parseSetTopicxml(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s TOPICXML ", &id); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 
 	remainder := s[len(fmt.Sprintf("CHAT %s TOPICXML ", id)):]
@@ -915,7 +903,7 @@ func (self *Chat) parseSetMystatus(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s MYSTATUS %s", &__, &self.Mystatus); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -925,7 +913,7 @@ func (self *Chat) parseSetMemberobjects(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s MEMBEROBJECTS %s", &__, &self.Memberobjects); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -935,7 +923,7 @@ func (self *Chat) parseSetFriendlyname(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s FRIENDLYNAME ", &id); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 
 	remainder := s[len(fmt.Sprintf("CHAT %s FRIENDLYNAME ", id)):]
@@ -949,7 +937,7 @@ func (self *Chat) parseSetActivemembers(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s ACTIVEMEMBERS ", &id); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 
 	remainder := s[len(fmt.Sprintf("CHAT %s ACTIVEMEMBERS ", id)):]
@@ -958,12 +946,49 @@ func (self *Chat) parseSetActivemembers(s string) error {
 	return nil
 }
 
+
+
+func getSkypeMessageSetSimpleString(t string, f string, s string) (string, error) {
+	var __ string
+	var ret string
+	if n, e := fmt.Sscanf(s, t + " %s " + f + " %s", &__, &ret); e != nil {
+		return "", e
+	} else if n != 2 {
+		return "", UnexpectedNumberOfFieldsError
+	}
+	return ret, nil
+}
+
+func getSkypeMessageSetComplexString(t string, f string, s string) (string, error) {
+	var id string
+	if n, e := fmt.Sscanf(s, t + " %s " + f + " ", &id); e != nil {
+		return "", e
+	} else if n != 1 {
+		return "", UnexpectedNumberOfFieldsError
+	}
+
+	remainder := s[len(fmt.Sprintf(t + " %s " + f + " ", id)):]
+	return strings.TrimRight(remainder, "\r\n\t "), nil
+}
+
+func getSkypeMessageSetList(t string, f string, s string, sep string) ([]string, error) {
+	var id string
+	if n, e := fmt.Sscanf(s, t + " %s " + f + " ", &id); e != nil {
+		return []string{}, e
+	} else if n != 1 {
+		return []string{}, UnexpectedNumberOfFieldsError
+	}
+
+	remainder := s[len(fmt.Sprintf(t + " %s " + f + " ", id)):]
+	return strings.Split(remainder, sep), nil
+}
+
 func (self *Chat) parseSetDescription(s string) error {
 	var id string
 	if n, e := fmt.Sscanf(s, "CHAT %s DESCRIPTION ", &id); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 
 	remainder := s[len(fmt.Sprintf("CHAT %s DESCRIPTION ", id)):]
@@ -977,7 +1002,7 @@ func (self *Chat) parseSetTimestamp(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s TIMESTAMP %s", &__, &self.Timestamp); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -987,7 +1012,7 @@ func (self *Chat) parseSetChatmessages(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s CHATMESSAGES ", &id); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 
 	remainder := s[len(fmt.Sprintf("CHAT %s CHATMESSAGES ", id)):]
@@ -1001,7 +1026,7 @@ func (self *Chat) parseSetTopic(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s TOPIC ", &id); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 
 	remainder := s[len(fmt.Sprintf("CHAT %s TOPIC ", id)):]
@@ -1015,7 +1040,7 @@ func (self *Chat) parseSetRole(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s ROLE %s", &__, &self.Role); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1025,7 +1050,7 @@ func (self *Chat) parseSetBlob(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s BLOB %s", &__, &self.Blob); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1035,7 +1060,7 @@ func (self *Chat) parseSetMembers(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s MEMBERS ", &id); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 
 	remainder := s[len(fmt.Sprintf("CHAT %s MEMBERS ", id)):]
@@ -1049,7 +1074,7 @@ func (self *Chat) parseSetMyrole(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT %s MYROLE %s", &__, &self.Myrole); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1088,7 +1113,7 @@ func (self *Chat) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "CHAT "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	if "DIALOG_PARTNER" == field_to_set {
 		return self.parseSetDialogPartner(s)
@@ -1165,7 +1190,7 @@ func (self *Chat) parseSet(s string) error {
 	if "MYROLE" == field_to_set {
 		return self.parseSetMyrole(s)
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Chatmember struct {
@@ -1181,7 +1206,7 @@ func (self *Chatmember) parseSetRole(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMEMBER %s ROLE %s", &__, &self.Role); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1191,7 +1216,7 @@ func (self *Chatmember) parseSetIsActive(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMEMBER %s IS_ACTIVE %s", &__, &self.IsActive); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1201,7 +1226,7 @@ func (self *Chatmember) parseSetIdentity(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMEMBER %s IDENTITY %s", &__, &self.Identity); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1211,7 +1236,7 @@ func (self *Chatmember) parseSetChatname(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMEMBER %s CHATNAME %s", &__, &self.Chatname); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1228,7 +1253,7 @@ func (self *Chatmember) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMEMBER "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	if "ROLE" == field_to_set {
 		return self.parseSetRole(s)
@@ -1242,7 +1267,7 @@ func (self *Chatmember) parseSet(s string) error {
 	if "CHATNAME" == field_to_set {
 		return self.parseSetChatname(s)
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Chatmessage struct {
@@ -1266,7 +1291,7 @@ func (self *Chatmessage) parseSetBody(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s BODY %s", &__, &self.Body); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1276,7 +1301,7 @@ func (self *Chatmessage) parseSetStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s STATUS %s", &__, &self.Status); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1286,7 +1311,7 @@ func (self *Chatmessage) parseSetEditedTimestamp(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s EDITED_TIMESTAMP %s", &__, &self.EditedTimestamp); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1296,7 +1321,7 @@ func (self *Chatmessage) parseSetEditedBy(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s EDITED_BY %s", &__, &self.EditedBy); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1306,7 +1331,7 @@ func (self *Chatmessage) parseSetUsers(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s USERS %s", &__, &self.Users); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1316,7 +1341,7 @@ func (self *Chatmessage) parseSetTimestamp(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s TIMESTAMP %s", &__, &self.Timestamp); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1326,7 +1351,7 @@ func (self *Chatmessage) parseSetFromHandle(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s FROM_HANDLE %s", &__, &self.FromHandle); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1336,7 +1361,7 @@ func (self *Chatmessage) parseSetChatname(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s CHATNAME %s", &__, &self.Chatname); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1346,7 +1371,7 @@ func (self *Chatmessage) parseSetIsEditable(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s IS_EDITABLE %s", &__, &self.IsEditable); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1356,7 +1381,7 @@ func (self *Chatmessage) parseSetLeavereason(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s LEAVEREASON %s", &__, &self.Leavereason); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1366,7 +1391,7 @@ func (self *Chatmessage) parseSetFromDispname(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s FROM_DISPNAME %s", &__, &self.FromDispname); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1376,7 +1401,7 @@ func (self *Chatmessage) parseSetChatmessageType(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE %s TYPE %s", &__, &self.ChatmessageType); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1401,7 +1426,7 @@ func (self *Chatmessage) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "CHATMESSAGE "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	if "BODY" == field_to_set {
 		return self.parseSetBody(s)
@@ -1439,7 +1464,7 @@ func (self *Chatmessage) parseSet(s string) error {
 	if "TYPE" == field_to_set {
 		return self.parseSetChatmessageType(s)
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Connstatus struct {
@@ -1455,9 +1480,9 @@ func (self *Connstatus) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "CONNSTATUS "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type ContactsFocused struct {
@@ -1473,9 +1498,9 @@ func (self *ContactsFocused) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "CONTACTS_FOCUSED "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Currentuserhandle struct {
@@ -1491,9 +1516,9 @@ func (self *Currentuserhandle) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "CURRENTUSERHANDLE "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Filetransfer struct {
@@ -1516,7 +1541,7 @@ func (self *Filetransfer) parseSetFinishtime(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER %s FINISHTIME %s", &__, &self.Finishtime); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1526,7 +1551,7 @@ func (self *Filetransfer) parseSetStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER %s STATUS %s", &__, &self.Status); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1536,7 +1561,7 @@ func (self *Filetransfer) parseSetPartnerHandle(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER %s PARTNER_HANDLE %s", &__, &self.PartnerHandle); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1546,7 +1571,7 @@ func (self *Filetransfer) parseSetFilepath(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER %s FILEPATH %s", &__, &self.Filepath); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1556,7 +1581,7 @@ func (self *Filetransfer) parseSetBytespersecond(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER %s BYTESPERSECOND %s", &__, &self.Bytespersecond); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1566,7 +1591,7 @@ func (self *Filetransfer) parseSetFilesize(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER %s FILESIZE %s", &__, &self.Filesize); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1576,7 +1601,7 @@ func (self *Filetransfer) parseSetStarttime(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER %s STARTTIME %s", &__, &self.Starttime); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1586,7 +1611,7 @@ func (self *Filetransfer) parseSetPartnerDispname(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER %s PARTNER_DISPNAME %s", &__, &self.PartnerDispname); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1596,7 +1621,7 @@ func (self *Filetransfer) parseSetFiletransferType(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER %s TYPE %s", &__, &self.FiletransferType); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1606,7 +1631,7 @@ func (self *Filetransfer) parseSetBytestransferred(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER %s BYTESTRANSFERRED %s", &__, &self.Bytestransferred); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1616,7 +1641,7 @@ func (self *Filetransfer) parseSetFailurereason(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER %s FAILUREREASON %s", &__, &self.Failurereason); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1640,7 +1665,7 @@ func (self *Filetransfer) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "FILETRANSFER "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	if "FINISHTIME" == field_to_set {
 		return self.parseSetFinishtime(s)
@@ -1675,7 +1700,7 @@ func (self *Filetransfer) parseSet(s string) error {
 	if "FAILUREREASON" == field_to_set {
 		return self.parseSetFailurereason(s)
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Group struct {
@@ -1694,7 +1719,7 @@ func (self *Group) parseSetDisplayname(s string) error {
 	if n, e := fmt.Sscanf(s, "GROUP %s DISPLAYNAME %s", &__, &self.Displayname); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1704,7 +1729,7 @@ func (self *Group) parseSetUsers(s string) error {
 	if n, e := fmt.Sscanf(s, "GROUP %s USERS %s", &__, &self.Users); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1714,7 +1739,7 @@ func (self *Group) parseSetExpanded(s string) error {
 	if n, e := fmt.Sscanf(s, "GROUP %s EXPANDED %s", &__, &self.Expanded); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1724,7 +1749,7 @@ func (self *Group) parseSetCustomGroupId(s string) error {
 	if n, e := fmt.Sscanf(s, "GROUP %s CUSTOM_GROUP_ID %s", &__, &self.CustomGroupId); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1734,7 +1759,7 @@ func (self *Group) parseSetVisible(s string) error {
 	if n, e := fmt.Sscanf(s, "GROUP %s VISIBLE %s", &__, &self.Visible); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1744,7 +1769,7 @@ func (self *Group) parseSetGroupType(s string) error {
 	if n, e := fmt.Sscanf(s, "GROUP %s TYPE %s", &__, &self.GroupType); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1754,7 +1779,7 @@ func (self *Group) parseSetNrofUsers(s string) error {
 	if n, e := fmt.Sscanf(s, "GROUP %s NROFUSERS %s", &__, &self.NrofUsers); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1774,7 +1799,7 @@ func (self *Group) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "GROUP "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	if "DISPLAYNAME" == field_to_set {
 		return self.parseSetDisplayname(s)
@@ -1794,7 +1819,7 @@ func (self *Group) parseSet(s string) error {
 	if "TYPE" == field_to_set {
 		return self.parseSetGroupType(s)
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Mute struct {
@@ -1810,9 +1835,9 @@ func (self *Mute) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "MUTE "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Pcspeaker struct {
@@ -1828,9 +1853,9 @@ func (self *Pcspeaker) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "PCSPEAKER "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type PredictiveDialerCountry struct {
@@ -1846,9 +1871,9 @@ func (self *PredictiveDialerCountry) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "PREDICTIVE_DIALER_COUNTRY "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Privilege struct {
@@ -1864,9 +1889,9 @@ func (self *Privilege) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "PRIVILEGE "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Profile struct {
@@ -1882,9 +1907,9 @@ func (self *Profile) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "PROFILE "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Ringer struct {
@@ -1900,9 +1925,9 @@ func (self *Ringer) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "RINGER "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Ringtone struct {
@@ -1915,7 +1940,7 @@ func (self *Ringtone) parseSetStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "RINGTONE %s STATUS %s", &__, &self.Status); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -1929,12 +1954,12 @@ func (self *Ringtone) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "RINGTONE "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	if "STATUS" == field_to_set {
 		return self.parseSetStatus(s)
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type SilentMode struct {
@@ -1950,9 +1975,9 @@ func (self *SilentMode) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "SILENT_MODE "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Skypeversion struct {
@@ -1968,9 +1993,9 @@ func (self *Skypeversion) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "SKYPEVERSION "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Sms struct {
@@ -1996,7 +2021,7 @@ func (self *Sms) parseSetBody(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s BODY %s", &__, &self.Body); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2006,7 +2031,7 @@ func (self *Sms) parseSetPriceCurrency(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s PRICE_CURRENCY %s", &__, &self.PriceCurrency); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2016,7 +2041,7 @@ func (self *Sms) parseSetTargetNumbers(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s TARGET_NUMBERS %s", &__, &self.TargetNumbers); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2026,7 +2051,7 @@ func (self *Sms) parseSetStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s STATUS %s", &__, &self.Status); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2036,7 +2061,7 @@ func (self *Sms) parseSetReplyToNumber(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s REPLY_TO_NUMBER %s", &__, &self.ReplyToNumber); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2046,7 +2071,7 @@ func (self *Sms) parseSetChunking(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s CHUNKING %s", &__, &self.Chunking); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2056,7 +2081,7 @@ func (self *Sms) parseSetPrice(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s PRICE %s", &__, &self.Price); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2066,7 +2091,7 @@ func (self *Sms) parseSetTargetStatuses(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s TARGET_STATUSES %s", &__, &self.TargetStatuses); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2076,7 +2101,7 @@ func (self *Sms) parseSetIsFailedUnseen(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s IS_FAILED_UNSEEN %s", &__, &self.IsFailedUnseen); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2086,7 +2111,7 @@ func (self *Sms) parseSetPricePrecision(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s PRICE_PRECISION %s", &__, &self.PricePrecision); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2096,7 +2121,7 @@ func (self *Sms) parseSetTimestamp(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s TIMESTAMP %s", &__, &self.Timestamp); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2106,7 +2131,7 @@ func (self *Sms) parseSetSmsType(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s TYPE %s", &__, &self.SmsType); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2116,7 +2141,7 @@ func (self *Sms) parseSetChunk(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s CHUNK %s", &__, &self.Chunk); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2126,7 +2151,7 @@ func (self *Sms) parseSetFailurereason(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS %s FAILUREREASON %s", &__, &self.Failurereason); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2153,7 +2178,7 @@ func (self *Sms) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "SMS "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	if "BODY" == field_to_set {
 		return self.parseSetBody(s)
@@ -2197,7 +2222,7 @@ func (self *Sms) parseSet(s string) error {
 	if "FAILUREREASON" == field_to_set {
 		return self.parseSetFailurereason(s)
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Spam struct {
@@ -2213,9 +2238,9 @@ func (self *Spam) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "SPAM "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type UiLanguage struct {
@@ -2231,9 +2256,9 @@ func (self *UiLanguage) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "UI_LANGUAGE "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type User struct {
@@ -2276,7 +2301,7 @@ func (self *User) parseSetProvince(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s PROVINCE %s", &__, &self.Province); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2286,7 +2311,7 @@ func (self *User) parseSetAbout(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s ABOUT %s", &__, &self.About); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2296,7 +2321,7 @@ func (self *User) parseSetPhoneOffice(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s PHONE_OFFICE %s", &__, &self.PhoneOffice); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2306,7 +2331,7 @@ func (self *User) parseSetCountry(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s COUNTRY %s", &__, &self.Country); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2316,7 +2341,7 @@ func (self *User) parseSetBirthday(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s BIRTHDAY %s", &__, &self.Birthday); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2326,7 +2351,7 @@ func (self *User) parseSetIsCfActive(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s IS_CF_ACTIVE %s", &__, &self.IsCfActive); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2336,7 +2361,7 @@ func (self *User) parseSetTimezone(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s TIMEZONE %s", &__, &self.Timezone); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2346,7 +2371,7 @@ func (self *User) parseSetSpeeddial(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s SPEEDDIAL %s", &__, &self.Speeddial); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2356,7 +2381,7 @@ func (self *User) parseSetDisplayname(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s DISPLAYNAME %s", &__, &self.Displayname); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2366,7 +2391,7 @@ func (self *User) parseSetLanguage(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s LANGUAGE %s", &__, &self.Language); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2376,7 +2401,7 @@ func (self *User) parseSetIsblocked(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s ISBLOCKED %s", &__, &self.Isblocked); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2386,7 +2411,7 @@ func (self *User) parseSetOnlinestatus(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s ONLINESTATUS %s", &__, &self.Onlinestatus); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2396,7 +2421,7 @@ func (self *User) parseSetSex(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s SEX %s", &__, &self.Sex); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2406,7 +2431,7 @@ func (self *User) parseSetCanLeaveVm(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s CAN_LEAVE_VM %s", &__, &self.CanLeaveVm); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2416,7 +2441,7 @@ func (self *User) parseSetMoodText(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s MOOD_TEXT %s", &__, &self.MoodText); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2426,7 +2451,7 @@ func (self *User) parseSetHomepage(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s HOMEPAGE %s", &__, &self.Homepage); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2436,7 +2461,7 @@ func (self *User) parseSetAliases(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s ALIASES %s", &__, &self.Aliases); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2446,7 +2471,7 @@ func (self *User) parseSetIsVideoCapable(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s IS_VIDEO_CAPABLE %s", &__, &self.IsVideoCapable); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2456,7 +2481,7 @@ func (self *User) parseSetLastonlinetimestamp(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s LASTONLINETIMESTAMP %s", &__, &self.Lastonlinetimestamp); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2466,7 +2491,7 @@ func (self *User) parseSetBuddystatus(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s BUDDYSTATUS %s", &__, &self.Buddystatus); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2476,7 +2501,7 @@ func (self *User) parseSetHascallequipment(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s HASCALLEQUIPMENT %s", &__, &self.Hascallequipment); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2486,7 +2511,7 @@ func (self *User) parseSetNrofAuthedBuddies(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s NROF_AUTHED_BUDDIES %s", &__, &self.NrofAuthedBuddies); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2496,7 +2521,7 @@ func (self *User) parseSetReceivedauthrequest(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s RECEIVEDAUTHREQUEST %s", &__, &self.Receivedauthrequest); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2506,7 +2531,7 @@ func (self *User) parseSetCity(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s CITY %s", &__, &self.City); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2516,7 +2541,7 @@ func (self *User) parseSetIsauthorized(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s ISAUTHORIZED %s", &__, &self.Isauthorized); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2526,7 +2551,7 @@ func (self *User) parseSetIsVoicemailCapable(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s IS_VOICEMAIL_CAPABLE %s", &__, &self.IsVoicemailCapable); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2536,7 +2561,7 @@ func (self *User) parseSetPhoneHome(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s PHONE_HOME %s", &__, &self.PhoneHome); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2546,7 +2571,7 @@ func (self *User) parseSetAvatar(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s AVATAR %s", &__, &self.Avatar); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2556,7 +2581,7 @@ func (self *User) parseSetRichMoodText(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s RICH_MOOD_TEXT %s", &__, &self.RichMoodText); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2566,7 +2591,7 @@ func (self *User) parseSetFullname(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s FULLNAME %s", &__, &self.Fullname); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2576,7 +2601,7 @@ func (self *User) parseSetPhoneMobile(s string) error {
 	if n, e := fmt.Sscanf(s, "USER %s PHONE_MOBILE %s", &__, &self.PhoneMobile); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2620,7 +2645,7 @@ func (self *User) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "USER "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	if "PROVINCE" == field_to_set {
 		return self.parseSetProvince(s)
@@ -2715,7 +2740,7 @@ func (self *User) parseSet(s string) error {
 	if "PHONE_MOBILE" == field_to_set {
 		return self.parseSetPhoneMobile(s)
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Userstatus struct {
@@ -2731,9 +2756,9 @@ func (self *Userstatus) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "USERSTATUS "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type VideoIn struct {
@@ -2749,9 +2774,9 @@ func (self *VideoIn) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "VIDEO_IN "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Voicemail struct {
@@ -2774,7 +2799,7 @@ func (self *Voicemail) parseSetStatus(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL %s STATUS %s", &__, &self.Status); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2784,7 +2809,7 @@ func (self *Voicemail) parseSetPartnerHandle(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL %s PARTNER_HANDLE %s", &__, &self.PartnerHandle); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2794,7 +2819,7 @@ func (self *Voicemail) parseSetTimestamp(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL %s TIMESTAMP %s", &__, &self.Timestamp); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2804,7 +2829,7 @@ func (self *Voicemail) parseSetAllowedDuration(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL %s ALLOWED_DURATION %s", &__, &self.AllowedDuration); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2814,7 +2839,7 @@ func (self *Voicemail) parseSetCaptureMic(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL %s CAPTURE_MIC %s", &__, &self.CaptureMic); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2824,7 +2849,7 @@ func (self *Voicemail) parseSetPartnerDispname(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL %s PARTNER_DISPNAME %s", &__, &self.PartnerDispname); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2834,7 +2859,7 @@ func (self *Voicemail) parseSetOutput(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL %s OUTPUT %s", &__, &self.Output); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2844,7 +2869,7 @@ func (self *Voicemail) parseSetDuration(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL %s DURATION %s", &__, &self.Duration); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2854,7 +2879,7 @@ func (self *Voicemail) parseSetInput(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL %s INPUT %s", &__, &self.Input); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2864,7 +2889,7 @@ func (self *Voicemail) parseSetVoicemailType(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL %s TYPE %s", &__, &self.VoicemailType); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2874,7 +2899,7 @@ func (self *Voicemail) parseSetFailurereason(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL %s FAILUREREASON %s", &__, &self.Failurereason); e != nil {
 		return e
 	} else if n != 2 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	return nil
 }
@@ -2898,7 +2923,7 @@ func (self *Voicemail) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "VOICEMAIL "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
 	if "STATUS" == field_to_set {
 		return self.parseSetStatus(s)
@@ -2933,7 +2958,7 @@ func (self *Voicemail) parseSet(s string) error {
 	if "FAILUREREASON" == field_to_set {
 		return self.parseSetFailurereason(s)
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Wallpaper struct {
@@ -2949,9 +2974,9 @@ func (self *Wallpaper) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "WALLPAPER "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type Windowstate struct {
@@ -2967,9 +2992,9 @@ func (self *Windowstate) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "WINDOWSTATE "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
 
 type In struct {
@@ -2985,7 +3010,7 @@ func (self *In) parseSet(s string) error {
 	if n, e := fmt.Sscanf(s, "in "+self.Id+" %s", &field_to_set); e != nil {
 		return e
 	} else if n != 1 {
-		return &UnexpectedNumberOfFieldsError{s: s}
+		return UnexpectedNumberOfFieldsError
 	}
-	return &ParserForFieldDoesNotExist{field: field_to_set}
+	return ParserForFieldDoesNotExist
 }
