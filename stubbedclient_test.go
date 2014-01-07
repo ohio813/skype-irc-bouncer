@@ -27,7 +27,7 @@ func Test(t *testing.T) {
 		return
 	}
 
-	client.ServeForDuration(5 * time.Second)
+	client.ServeForDuration(2 * time.Second)
 
 	client.DumpUsers(os.Stdout)
 	client.DumpGroups(os.Stdout)
@@ -97,7 +97,7 @@ func (self *Client) DumpGroups(writer io.Writer) {
 	for id, group := range self.groups {
 		w.WriteString("  " + id + "\n")
 		w.WriteString("    Displayname:" + group.Displayname + "\n")
-		w.WriteString("    Users:" + group.Users + "\n")
+		w.WriteString("    Users:" + strings.Join(group.Users, ", ") + "\n")
 		w.WriteString("    Expanded:" + group.Expanded + "\n")
 		w.WriteString("    CustomGroupId:" + group.CustomGroupId + "\n")
 		w.WriteString("    Visible:" + group.Visible + "\n")
@@ -116,7 +116,7 @@ func (self *Client) DumpChatmessages(writer io.Writer) {
 		w.WriteString("    Status:" + chatmessage.Status + "\n")
 		w.WriteString("    EditedTimestamp:" + chatmessage.EditedTimestamp + "\n")
 		w.WriteString("    EditedBy:" + chatmessage.EditedBy + "\n")
-		w.WriteString("    Users:" + chatmessage.Users + "\n")
+		w.WriteString("    Users:" + strings.Join(chatmessage.Users, ", ") + "\n")
 		w.WriteString("    Timestamp:" + chatmessage.Timestamp + "\n")
 		w.WriteString("    FromHandle:" + chatmessage.FromHandle + "\n")
 		w.WriteString("    Chatname:" + chatmessage.Chatname + "\n")
@@ -162,4 +162,3 @@ func (self *Client) DumpChats(writer io.Writer) {
 	}
 	w.Flush()
 }
-
