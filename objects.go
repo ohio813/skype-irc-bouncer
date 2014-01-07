@@ -42,6 +42,11 @@ func getSkypeMessageSetList(t string, f string, s string, sep string) ([]string,
 	return strings.Split(remainder, sep), nil
 }
 
+type SkypeObject interface {
+	getFetchAllFieldsCommands() []string
+	parseSet(s string) error
+}
+
 type Chat struct {
 	Id                 string
 	DialogPartner      string
@@ -71,7 +76,7 @@ type Chat struct {
 	Myrole             string
 }
 
-func (self *Chat) getFetchAllFieldsCommands() ([]string, error) {
+func (self *Chat) getFetchAllFieldsCommands() ([]string) {
 	return []string{
 		"GET CHAT " + self.Id + " DIALOG_PARTNER",
 		"GET CHAT " + self.Id + " PASSWORDHINT",
@@ -97,7 +102,7 @@ func (self *Chat) getFetchAllFieldsCommands() ([]string, error) {
 		"GET CHAT " + self.Id + " ROLE",
 		"GET CHAT " + self.Id + " BLOB",
 		"GET CHAT " + self.Id + " MEMBERS",
-		"GET CHAT " + self.Id + " MYROLE"}, nil
+		"GET CHAT " + self.Id + " MYROLE"}
 }
 
 func (self *Chat) parseSet(s string) error {
@@ -265,7 +270,6 @@ func (self *Chat) parseSet(s string) error {
 	return nil
 }
 
-
 type Chatmember struct {
 	Id       string
 	Role     string
@@ -274,11 +278,11 @@ type Chatmember struct {
 	Chatname string  // may contain a space
 }
 
-func (self *Chatmember) getFetchAllFieldsCommands() ([]string, error) {
+func (self *Chatmember) getFetchAllFieldsCommands() ([]string) {
 	return []string{"GET CHATMEMBER " + self.Id + " ROLE",
 		"GET CHATMEMBER " + self.Id + " IS_ACTIVE",
 		"GET CHATMEMBER " + self.Id + " IDENTITY",
-		"GET CHATMEMBER " + self.Id + " CHATNAME"}, nil
+		"GET CHATMEMBER " + self.Id + " CHATNAME"}
 }
 
 func (self *Chatmember) parseSet(s string) error {
@@ -336,7 +340,7 @@ type Chatmessage struct {
 	ChatmessageType string
 }
 
-func (self *Chatmessage) getFetchAllFieldsCommands() ([]string, error) {
+func (self *Chatmessage) getFetchAllFieldsCommands() ([]string) {
 	return []string{"GET CHATMESSAGE " + self.Id + " BODY",
 		"GET CHATMESSAGE " + self.Id + " STATUS",
 		"GET CHATMESSAGE " + self.Id + " EDITED_TIMESTAMP",
@@ -348,7 +352,7 @@ func (self *Chatmessage) getFetchAllFieldsCommands() ([]string, error) {
 		"GET CHATMESSAGE " + self.Id + " IS_EDITABLE",
 		"GET CHATMESSAGE " + self.Id + " LEAVEREASON",
 		"GET CHATMESSAGE " + self.Id + " FROM_DISPNAME",
-		"GET CHATMESSAGE " + self.Id + " TYPE"}, nil
+		"GET CHATMESSAGE " + self.Id + " TYPE"}
 }
 
 func (self *Chatmessage) parseSet(s string) error {
@@ -453,7 +457,7 @@ type Filetransfer struct {
 	Failurereason    string
 }
 
-func (self *Filetransfer) getFetchAllFieldsCommands() ([]string, error) {
+func (self *Filetransfer) getFetchAllFieldsCommands() ([]string) {
 	return []string{"GET FILETRANSFER " + self.Id + " FINISHTIME",
 		"GET FILETRANSFER " + self.Id + " STATUS",
 		"GET FILETRANSFER " + self.Id + " PARTNER_HANDLE",
@@ -464,7 +468,7 @@ func (self *Filetransfer) getFetchAllFieldsCommands() ([]string, error) {
 		"GET FILETRANSFER " + self.Id + " PARTNER_DISPNAME",
 		"GET FILETRANSFER " + self.Id + " TYPE",
 		"GET FILETRANSFER " + self.Id + " BYTESTRANSFERRED",
-		"GET FILETRANSFER " + self.Id + " FAILUREREASON"}, nil
+		"GET FILETRANSFER " + self.Id + " FAILUREREASON"}
 }
 
 func (self *Filetransfer) parseSet(s string) error {
@@ -559,14 +563,14 @@ type Group struct {
 	NrofUsers     string
 }
 
-func (self *Group) getFetchAllFieldsCommands() ([]string, error) {
+func (self *Group) getFetchAllFieldsCommands() ([]string) {
 	return []string{"GET GROUP " + self.Id + " DISPLAYNAME",
 		"GET GROUP " + self.Id + " USERS",
 		"GET GROUP " + self.Id + " EXPANDED",
 		"GET GROUP " + self.Id + " CUSTOM_GROUP_ID",
 		"GET GROUP " + self.Id + " VISIBLE",
 		"GET GROUP " + self.Id + " TYPE",
-		"GET GROUP " + self.Id + " NROFUSERS"}, nil
+		"GET GROUP " + self.Id + " NROFUSERS"}
 }
 
 func (self *Group) parseSet(s string) error {
@@ -655,7 +659,7 @@ type User struct {
 	PhoneMobile         string  // may have a space
 }
 
-func (self *User) getFetchAllFieldsCommands() ([]string, error) {
+func (self *User) getFetchAllFieldsCommands() ([]string) {
 	return []string{"GET USER " + self.Id + " PROVINCE",
 		"GET USER " + self.Id + " ABOUT",
 		"GET USER " + self.Id + " PHONE_OFFICE",
@@ -686,7 +690,7 @@ func (self *User) getFetchAllFieldsCommands() ([]string, error) {
 		"GET USER " + self.Id + " AVATAR",
 		"GET USER " + self.Id + " RICH_MOOD_TEXT",
 		"GET USER " + self.Id + " FULLNAME",
-		"GET USER " + self.Id + " PHONE_MOBILE"}, nil
+		"GET USER " + self.Id + " PHONE_MOBILE"}
 }
 
 func (self *User) parseSet(s string) error {

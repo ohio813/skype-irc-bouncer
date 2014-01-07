@@ -176,6 +176,94 @@ type Client struct {
 	events *EventDispatcher
 }
 
+func (self *Client) getUser(id string) (user *User, didCreate bool, e error) {
+	// TODO(wb): locking
+	if user, ok := self.users[id]; ok {
+		return user, false, nil
+	} else {
+		self.users[id] = &User{
+			Id: id,
+		}
+		user = self.users[id]
+		for _, cmd := range user.getFetchAllFieldsCommands() {
+			self.WriteLine(cmd)
+		}
+		return user, true, nil
+	}
+}
+
+func (self *Client) touchUser(id string) (didCreate bool, e error) {
+	_, didCreate, e = self.getUser(id)
+	return didCreate, e
+}
+
+func (self *Client) getGroup(id string) (group *Group, didCreate bool, e error) {
+	// TODO(wb): locking
+	if group, ok := self.groups[id]; ok {
+		return group, false, nil
+	} else {
+		self.groups[id] = &Group{
+			Id: id,
+		}
+
+		group = self.groups[id]
+		for _, cmd := range group.getFetchAllFieldsCommands() {
+			self.WriteLine(cmd)
+		}
+		return group, true, nil
+	}
+}
+
+func (self *Client) touchGroup(id string) (didCreate bool, e error) {
+	_, didCreate, e = self.getGroup(id)
+	return didCreate, e
+}
+
+func (self *Client) getChat(id string) (chat *Chat, didCreate bool, e error) {
+	// TODO(wb): locking
+	if chat, ok := self.chats[id]; ok {
+		return chat, false, nil
+	} else {
+		self.chats[id] = &Chat{
+			Id: id,
+		}
+
+		chat = self.chats[id]
+		for _, cmd := range chat.getFetchAllFieldsCommands() {
+			self.WriteLine(cmd)
+		}
+		return chat, true, nil
+	}
+}
+
+func (self *Client) touchChat(id string) (didCreate bool, e error) {
+	_, didCreate, e = self.getChat(id)
+	return didCreate, e
+}
+
+func (self *Client) getChatmessage(id string) (chatmessage *Chatmessage, didCreate bool, e error) {
+	// TODO(wb): locking
+	if chatmessage, ok := self.chatmessages[id]; ok {
+		return chatmessage, false, nil
+	} else {
+		self.chatmessages[id] = &Chatmessage{
+			Id: id,
+		}
+
+		chatmessage = self.chatmessages[id]
+		for _, cmd := range chatmessage.getFetchAllFieldsCommands() {
+			self.WriteLine(cmd)
+		}
+		return chatmessage, true, nil
+	}
+
+}
+
+func (self *Client) touchChatmessage(id string) (didCreate bool, e error) {
+	_, didCreate, e = self.getChatmessage(id)
+	return didCreate, e
+}
+
 func MakeClient(config *Config, conn *SkypeConnection) (*Client, error) {
 	client := Client{
 		conn:         conn,
@@ -204,6 +292,7 @@ func (self *Client) Authenticate(username string, password string) error {
 	return nil
 }
 
+// create an EventHandler and attach a function to it that handles each event
 func makeHandler(fn func(string)) EventHandler {
 	Q := make(EventHandler)
 
@@ -216,6 +305,29 @@ func makeHandler(fn func(string)) EventHandler {
 	return Q
 }
 
+// get the second field from the Skype message
+func getSkypeMessageObjectId(objectType string, s string) (string, error) {
+	var id string
+	if n, e := fmt.Sscanf(s, objectType + " %s", &id); e != nil {
+		return "", e
+	} else if n != 1 {
+		return "", UnexpectedNumberOfFieldsError
+	}
+	return id, nil
+}
+
+// get the third field from the Skype message
+func getSkypeMessageFieldName(objectType string, s string) (string, error) {
+	var id string
+	var fieldName string
+	if n, e := fmt.Sscanf(s, objectType + " %s %s", &id, &fieldName); e != nil {
+		return "", e
+	} else if n != 2 {
+		return "", UnexpectedNumberOfFieldsError
+	}
+	return fieldName, nil
+}
+
 
 func (self *Client) setupInternalHandlers() error {
 	/***
@@ -223,7 +335,6 @@ func (self *Client) setupInternalHandlers() error {
 	 *   - "recv" : entire line from Skype4Py
 	 *   - "recv.PING" : entire line from Skype4Py
 	 *   - "recv.USER" : entire line from Skype4Py
-	 *   - "recv.USER.new" : the new User id
 	 *
 	 */
 
@@ -250,132 +361,222 @@ func (self *Client) setupInternalHandlers() error {
 	}))
 
 	self.events.RegisterHandler("recv.USER", makeHandler(func(line string) {
-		var id string
-		if n, e := fmt.Sscanf(line, "USER %s", &id); e != nil {
-			return
-		} else if n != 1 {
-			return
-		}
-
-		if _, ok := self.users[id]; !ok {
-			self.users[id] = &User{Id: id}
-			self.events.Emit("recv.USER.new", id)
-		}
-		user := self.users[id]
-		user.parseSet(line)
-	}))
-
-	self.events.RegisterHandler("recv.USER.new", makeHandler(func(id string) {
-		user, ok := self.users[id]
-		if !ok {
-			return
-		}
-
-		cmds, e := user.getFetchAllFieldsCommands()
+		id, e := getSkypeMessageObjectId("USER", line)
 		if e != nil {
-			// TODO: get rid of the error on this fetch
 			return
 		}
-		for _, cmd := range cmds {
-			self.WriteLine(cmd)
+
+		user, didCreate, e := self.getUser(id)
+		if e != nil {
+			return 
 		}
+		if didCreate {
+
+		}
+		user.parseSet(line)
+
+		fieldName, e := getSkypeMessageFieldName("USER", line)
+		if e != nil {
+			return
+		}
+		self.events.Emit("recv.USER." + fieldName, line)
 	}))
 
 	self.events.RegisterHandler("recv.GROUP", makeHandler(func(line string) {
-		var id string
-		if n, e := fmt.Sscanf(line, "GROUP %s", &id); e != nil {
-			return
-		} else if n != 1 {
+		id, e := getSkypeMessageObjectId("GROUP", line)
+		if e != nil {
 			return
 		}
 
-		if _, ok := self.groups[id]; !ok {
-			self.groups[id] = &Group{Id: id}
-			self.events.Emit("recv.GROUP.new", id)
+		group, didCreate,  e := self.getGroup(id)
+		if e != nil {
+			return
 		}
-		group := self.groups[id]
+		if didCreate {
+
+		}
 		group.parseSet(line)
+
+		fieldName, e := getSkypeMessageFieldName("GROUP", line)
+		if e != nil {
+			return
+		}
+		self.events.Emit("recv.GROUP." + fieldName, line)
 	}))
 
-	self.events.RegisterHandler("recv.GROUP.new", makeHandler(func(id string) {
-		group, ok := self.groups[id]
-		if !ok {
+	self.events.RegisterHandler("recv.GROUP.USERS", makeHandler(func(line string) {
+		id, e := getSkypeMessageObjectId("GROUP", line)
+		if e != nil {
 			return
 		}
 
-		cmds, e := group.getFetchAllFieldsCommands()
+		group, _, e := self.getGroup(id)
 		if e != nil {
-			// TODO: get rid of the error on this fetch
 			return
 		}
-		for _, cmd := range cmds {
-			self.WriteLine(cmd)
+		for _, userid := range group.Users {
+			self.touchUser(userid)
 		}
 	}))
 
 	self.events.RegisterHandler("recv.CHATMESSAGE", makeHandler(func(line string) {
-		var id string
-		if n, e := fmt.Sscanf(line, "CHATMESSAGE %s", &id); e != nil {
-			return
-		} else if n != 1 {
+		id, e := getSkypeMessageObjectId("CHATMESSAGE", line)
+		if e != nil {
 			return
 		}
 
-		if _, ok := self.chatmessages[id]; !ok {
-			self.chatmessages[id] = &Chatmessage{Id: id}
-			self.events.Emit("recv.CHATMESSAGE.new", id)
+		chatmessage, didCreate, e := self.getChatmessage(id)
+		if e != nil {
+			return
 		}
-		chatmessage := self.chatmessages[id]
+		if didCreate {
+
+		}
 		chatmessage.parseSet(line)
+
+		fieldName, e := getSkypeMessageFieldName("CHATMESSAGE", line)
+		if e != nil {
+			return
+		}
+		self.events.Emit("recv.CHATMESSAGE." + fieldName, line)
 	}))
 
-	self.events.RegisterHandler("recv.CHATMESSAGE.new", makeHandler(func(id string) {
-		chatmessage, ok := self.chatmessages[id]
-		if !ok {
+	self.events.RegisterHandler("recv.CHATMESSAGE.FROM_HANDLE", makeHandler(func(line string) {
+		id, e := getSkypeMessageObjectId("CHATMESSAGE", line)
+		if e != nil {
 			return
 		}
 
-		cmds, e := chatmessage.getFetchAllFieldsCommands()
+		chatmessage, _, e := self.getChatmessage(id)
 		if e != nil {
-			// TODO: get rid of the error on this fetch
 			return
 		}
-		for _, cmd := range cmds {
-			self.WriteLine(cmd)
+		self.touchUser(chatmessage.FromHandle)
+	}))
+
+	self.events.RegisterHandler("recv.CHATMESSAGE.CHATNAME", makeHandler(func(line string) {
+		id, e := getSkypeMessageObjectId("CHATMESSAGE", line)
+		if e != nil {
+			return
 		}
+
+		chatmessage, _, e := self.getChatmessage(id)
+		if e != nil {
+			return
+		}
+		self.touchChat(chatmessage.Chatname)
 	}))
 
 	self.events.RegisterHandler("recv.CHAT", makeHandler(func(line string) {
-		var id string
-		if n, e := fmt.Sscanf(line, "CHAT %s", &id); e != nil {
-			return
-		} else if n != 1 {
-			return
-		}
-
-		if _, ok := self.chats[id]; !ok {
-			self.chats[id] = &Chat{Id: id}
-			self.events.Emit("recv.CHAT.new", id)
-		}
-		chat := self.chats[id]
-		chat.parseSet(line)
-	}))
-
-	self.events.RegisterHandler("recv.CHAT.new", makeHandler(func(id string) {
-		chat, ok := self.chats[id]
-		if !ok {
-			return
-		}
-
-		cmds, e := chat.getFetchAllFieldsCommands()
+		id, e := getSkypeMessageObjectId("CHAT", line)
 		if e != nil {
-			// TODO: get rid of the error on this fetch
 			return
 		}
-		for _, cmd := range cmds {
-			self.WriteLine(cmd)
+
+		chat, didCreate, e := self.getChat(id)
+		if e != nil {
+			return
+		}
+		if didCreate {
+
+		}
+		chat.parseSet(line)
+
+		fieldName, e := getSkypeMessageFieldName("CHAT", line)
+		if e != nil {
+			return
+		}
+		self.events.Emit("recv.CHAT." + fieldName, line)
+	}))
+
+	self.events.RegisterHandler("recv.CHAT.RECENTCHATMESSAGES", makeHandler(func(line string) {
+		id, e := getSkypeMessageObjectId("CHAT", line)
+		if e != nil {
+			return
+		}
+
+		chat, _, e := self.getChat(id)
+		if e != nil {
+			return
+		}
+		for _, chatmessageid := range chat.Recentchatmessages {
+			self.touchChatmessage(chatmessageid)
 		}
 	}))
+
+	self.events.RegisterHandler("recv.CHAT.MESSAGES", makeHandler(func(line string) {
+		id, e := getSkypeMessageObjectId("CHAT", line)
+		if e != nil {
+			return
+		}
+
+		chat, _, e := self.getChat(id)
+		if e != nil {
+			return
+		}
+		for _, chatmessageid := range chat.Chatmessages {
+			self.touchChatmessage(chatmessageid)
+		}
+	}))
+
+	self.events.RegisterHandler("recv.CHAT.MEMBERS", makeHandler(func(line string) {
+		id, e := getSkypeMessageObjectId("CHAT", line)
+		if e != nil {
+			return
+		}
+
+		chat, _, e := self.getChat(id)
+		if e != nil {
+			return
+		}
+		for _, userid := range chat.Members {
+			self.touchUser(userid)
+		}
+	}))
+
+	self.events.RegisterHandler("recv.CHAT.POSTERS", makeHandler(func(line string) {
+		id, e := getSkypeMessageObjectId("CHAT", line)
+		if e != nil {
+			return
+		}
+
+		chat, _, e := self.getChat(id)
+		if e != nil {
+			return
+		}
+		for _, userid := range chat.Posters {
+			self.touchUser(userid)
+		}
+	}))
+
+	self.events.RegisterHandler("recv.CHAT.ACTIVEMEMBERS", makeHandler(func(line string) {
+		id, e := getSkypeMessageObjectId("CHAT", line)
+		if e != nil {
+			return
+		}
+
+		chat, _, e := self.getChat(id)
+		if e != nil {
+			return
+		}
+		for _, userid := range chat.Activemembers {
+			self.touchUser(userid)
+		}
+	}))
+
+	self.events.RegisterHandler("recv.CHAT.DialogPartner", makeHandler(func(line string) {
+		id, e := getSkypeMessageObjectId("CHAT", line)
+		if e != nil {
+			return
+		}
+
+		chat, _, e := self.getChat(id)
+		if e != nil {
+			return
+		}
+		self.touchUser(chat.DialogPartner)
+	}))
+
 	return nil
 }
 
