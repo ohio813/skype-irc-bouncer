@@ -119,6 +119,7 @@ def main():
     try:
         server = Server((address, port), ClientHandler)
         logger.info("Server started on %s:%d" % (address, port))
+        logger.info("Test with: openssl s_client -connect localhost:6667 -cert ./ssl/clientca.pem -key ./ssl/client.key -CAfile ./ssl/server.pem -showcerts")
         server.serve_forever()
     except socket.error as e:
         logger.error(repr(e))
