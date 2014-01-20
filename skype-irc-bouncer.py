@@ -7,10 +7,11 @@
 #  - creating chats
 #  - TOPIC (setting)
 
-import logging
+import re
+import ssl
 import socket
 import select
-import re
+import logging
 import datetime
 
 from Skype4Py import Skype
@@ -22,9 +23,7 @@ from irc import buffer
 
 MOD_HANDLE = "[MOD]"
 UNREAD_HANDLE = "UNREAD"
-
-SRV_WELCOME = "Welcome to %s v%s, the ugliest IRC server in the world." % (
-    __name__, client.VERSION)
+SRV_WELCOME = "Welcome to %s v%s." % (__name__, client.VERSION)
 
 
 class IRCError(Exception):
@@ -487,7 +486,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
 
 
 class IRCServer(six.moves.socketserver.ThreadingMixIn,
-        six.moves.socketserver.TCPServer):
+                six.moves.socketserver.TCPServer):
     daemon_threads = True
     allow_reuse_address = True
 
@@ -497,7 +496,7 @@ class IRCServer(six.moves.socketserver.ThreadingMixIn,
     def __init__(self, *args, **kwargs):
         self._logger = logging.getLogger("IRCServer")
 
-        self.servername = 'localhost'
+        self.servername = '0.0.0.0'
         self.clients = {}
 
         self.skype = Skype()
@@ -506,6 +505,14 @@ class IRCServer(six.moves.socketserver.ThreadingMixIn,
         self.skype.OnMessageStatus = self._handle_recv_message
 
         six.moves.socketserver.TCPServer.__init__(self, *args, **kwargs)
+        self.socket = ssl.wrap_socket(self.socket, 
+                                      keyfile="./ssl/server.key",
+                                      certfile="./ssl/serverca.pem", 
+                                      server_side=True, 
+                                      cert_reqs=ssl.CERT_REQUIRED, 
+                                      ca_certs="./ssl/clientca.pem", 
+                                      do_handshake_on_connect=True)
+
 
     def _handle_auth_req(self, user):
         self._logger.info("Received authorization request: %s" % (user))
