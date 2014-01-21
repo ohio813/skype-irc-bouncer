@@ -4,7 +4,7 @@ file.srl:
 
 
 ca.pem: file.srl
-	openssl req -key ca.key -out ca.pem -new -x509 -config ca.config
+	openssl req -keyout ca.key -out ca.pem -new -x509 -config ca.config
 
 
 server.key:
@@ -51,4 +51,4 @@ all: serverca.pem clientca.pem nick.pem
 
 
 clean:
-	rm -rf ca.pem file.srl server.key server.req server.pem client.key client.req client.pem serverca.pem clientca.pem nick.pem
+	rm -rf ca.pem file.srl server.key server.req server.pem client.key client.req client.pem serverca.pem clientca.pem nick.pem ca.key
