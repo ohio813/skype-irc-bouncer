@@ -27,5 +27,4 @@ Setup
    - cat ca.pem >> clientca.pem
    - cat clientca.pem > nick.pem
    - cat client.key >> nick.pem
-
-
+  - configure IRC client certs http://www.oftc.net/NickServ/CertFP/
