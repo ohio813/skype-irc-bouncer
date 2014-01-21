@@ -1,2 +1,4 @@
 irc
 Skype4Py
+six
+dbus

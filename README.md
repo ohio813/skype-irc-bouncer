@@ -21,9 +21,11 @@ Setup
    - openssl genrsa -out client.key 1024 
    - openssl req -key client.key -new -out client.req 
    - openssl x509 -req -in client.req -CA ca.pem -CAkey privkey.pem -CAserial file.srl -out client.pem
-   - cat server.pem >> serverca.pem
+   - cat server.pem > serverca.pem
    - cat ca.pem >> serverca.pem
-   - cat client.pem >> clientca.pem
+   - cat client.pem > clientca.pem
    - cat ca.pem >> clientca.pem
+   - cat clientca.pem > nick.pem
+   - cat client.key >> nick.pem
 
 
