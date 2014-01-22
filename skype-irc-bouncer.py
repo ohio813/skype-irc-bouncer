@@ -6,7 +6,7 @@
 #  - AWAY
 #  - creating chats
 #  - TOPIC (setting)
-
+import sys
 import re
 import ssl
 import socket
@@ -23,7 +23,29 @@ from irc import buffer
 
 MOD_HANDLE = "[MOD]"
 UNREAD_HANDLE = "UNREAD"
+READ_HANDLE = "READ"
 SRV_WELCOME = "Welcome to %s v%s." % (__name__, client.VERSION)
+
+
+def camelcase_sentence(value):
+    """
+    inspired by http://stackoverflow.com/a/4306777/87207
+    """
+    def camelcase():
+        yield str.lower
+        while True:
+            yield str.capitalize
+
+    def camelcase_u():
+        yield unicode.lower
+        while True:
+            yield unicode.capitalize
+
+    if isinstance(value, unicode):
+        c = camelcase_u()
+    else:
+        c = camelcase()
+    return "".join(c.next()(x) if x else ' ' for x in value.split(' '))
 
 
 class IRCError(Exception):
@@ -54,20 +76,30 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         pass
 
     def __init__(self, request, client_address, server):
-        self.user = None
-        self.host = client_address  # Client's hostname / ip.
-        self.realname = None        # Client's real name
-        self.nick = None            # Client's currently registered nickname
-        self.send_queue = []        # Messages to send to client (strings)
-
-        self._joined_chats = set()  # Skype chats that the client has interacted with
-        
-        self._chat_channelnames = []  # list(chat.Name, irc_channel_name)
-
         self._logger = logging.getLogger("IRCClient")
-
+        self.user = None
+        self.host = client_address   # Client's hostname / ip.
+        self.realname = None         # Client's real name
+        self.nick = None             # Client's currently registered nickname
+        self.send_queue = []         # Messages to send to client (strings)
+        self._joined_chats = set()   # set(chat.Name), Skype chats that the client has interacted with
+        self._chat_channelnames = []  # list(chat.Name, irc_channel_name)
+        self._supported_irc_commands = {
+            "nick": self._handle_nick,
+            "user": self._handle_user,
+            "ping": self._handle_ping,
+            "join": self._handle_join,
+            "privmsg": self._handle_privmsg,
+            "list": self._handle_list,
+            "mode": self._handle_mode,
+            }
+        self._supported_operator_commands = {
+            "history": self._handle_history,
+            }
         six.moves.socketserver.BaseRequestHandler.__init__(self, request,
-            client_address, server)
+                                                           client_address,
+                                                           server)
+
 
     def handle(self):
         self._logger.info('Client connected: %s', self.client_ident())
@@ -116,8 +148,10 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         try:
             self._logger.debug('from %s: %s' % (self.client_ident(), line))
             command, sep, params = line.partition(' ')
-            handler = getattr(self, 'handle_%s' % command.lower(), None)
-            if not handler:
+
+            try:
+                handler = self._supported_irc_commands[command.lower()]
+            except KeyError:
                 self._logger.info('No handler for command: %s. '
                     'Full line: %s' % (command, line))
                 raise IRCError.from_name('unknowncommand',
@@ -141,7 +175,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         self._logger.debug('to %s: %s', self.client_ident(), msg)
         self.request.send(msg.encode('utf-8') + b'\r\n')
 
-    def handle_nick(self, params):
+    def _handle_nick(self, params):
         """
         Handle the initial setting of the user's nickname and nick changes.
         """
@@ -182,7 +216,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         # Send a notification of the nick change to the client itself
         return message
 
-    def handle_user(self, params):
+    def _handle_user(self, params):
         """
         Handle the USER command which identifies the user to the server.
         """
@@ -198,118 +232,105 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         self.realname = realname
         return ''
 
-    def handle_ping(self, params):
+    def _handle_ping(self, params):
         """
         Handle client PING requests to keep the connection alive.
         """
         response = ':%s PONG :%s' % (self.server.servername, self.server.servername)
         return response
 
-    def handle_join(self, params):
-        # TODO: this is a disaster!
-        channel_names = params.split(' ', 1)[0]  # Ignore keys
+    def _ensure_client_joined(self, chat):
+        if chat.Name not in self._joined_chats:
+            friendlychannelname = self._get_friendly_channelname_from_chat(chat)
+            self._logger.info("joining to %s (%s)" % (chat.Name, friendlychannelname))
+            message = ":%s JOIN :%s" % (self.client_ident(), friendlychannelname) 
+            self.send_queue.append(message)
+
+            message = ":%s TOPIC %s :%s" % (MOD_HANDLE, friendlychannelname, chat.FriendlyName)
+            self.send_queue.append(message)
+
+            nicks = [m.Handle for m in chat.Members]
+            self._queue_client_message(353, "= %s :%s" % (friendlychannelname, " ".join(nicks)))
+            self._queue_client_message(366, "%s :End of /NAMES list" % (friendlychannelname))
+
+            unread_messages = sorted([m for m in chat.Messages if m.Status == "RECEIVED"], key=lambda m: m.Timestamp)
+            if len(unread_messages) > 0:
+                self._queue_client_mod_message(chat, "Begin of UNREAD messages")
+                for message in unread_messages:
+                    self._logger.info("unread message: %s %s %s" % (message.Timestamp, message.FromHandle, message.Body))
+                    ts = datetime.datetime.fromtimestamp(message.Timestamp)
+                    # TODO(wb): handle long messages
+                    # TODO(wb): handle messages with newlines
+                    for part in message.Body.split("\n"):
+                        if part.rstrip("\r\n ") == "":
+                            continue
+                        m = "<%s %s> %s" % (ts.isoformat(), message.FromHandle, part)
+                        composed = ":%s NOTICE %s :%s" % (UNREAD_HANDLE, friendlychannelname, m)
+                        self.send_queue.append(composed)
+                self._queue_client_mod_message(chat, "End of UNREAD messages")
+            self._joined_chats.add(chat.Name)
+
+    def _handle_join(self, params):
+        channel_names = params.split(' ', 1)[0]
         for channel_name in channel_names.split(','):
-            r_channel_name = channel_name.strip()
+            channel_name = channel_name.strip()
+            self._logger.info("Request to JOIN %s" % (channel_name))
 
-            self._logger.info("Request to JOIN %s" % (r_channel_name))
-
-            found = False
-            for chat in self.server.skype.Chats:
-                if chat.Name == r_channel_name:
-                    found = True
-                    self._ensure_client_joined(chat)
-                    # TODO: i don't like the early returns, but need a refactor first
-                    return
-            if not found:
-                stripped_channel_name = r_channel_name.lstrip("#")
-                matches = []
-                for chat in self.server.skype.Chats:
-                    if stripped_channel_name in chat.FriendlyName:
-                        if stripped_channel_name == chat.FriendlyName:
-                            self._ensure_client_joined(chat)
-                            return
-                        else:
-                            matches.append(chat)
-                        
-                if len(matches) == 1:
-                    self._ensure_client_joined(matches[0])
-                    return
-                elif len(matches) > 1:
-                    message = "%s :Ambiguous channel name matches [%s]" % \
-                        (stripped_channel_name, ", ".join(map(lambda c: c.FriendlyName, matches)))
-                    raise IRCError.from_name('nosuchchannel', message)
+            if channel_name.startswith('#') or channel_name.startswith('$'):
+                chats = self._guess_chats_from_user_channelname(channel_name)
+                if len(chats) == 0:
+                    raise IRCError.from_name('nosuchchannel',
+                                             '%s :Cannot join to channel (DNE)' % channel_name)
+                elif len(chats) > 1:
+                    chat_list = ", ".join(map(lambda c: c.Name, chats))
+                    raise IRCError.from_name('nosuchchannel',
+                                             '%s :Cannot join to channel %s, ambiguous: [%s]' % (channel_name, channel_name, chat_list))
                 else:
-                    self.build_all_friendly_channelnames()
-                    matches = []
-                    for skypename, channelname in self._chat_channelnames:
-                        print stripped_channel_name, channelname
-                        if stripped_channel_name in channelname:
-                            if stripped_channel_name == channelname:
-                                # perfect match
-                                
-                                # TODO: refactor this out
-                                found = False
-                                for chat in self.server.skype.Chats:
-                                    if chat.Name == skypename:
-                                        self._ensure_client_joined(chat)
-                                        return
-                                if not found:
-                                    raise IRCError.from_name('nosuchchannel',
-                                                         '%s :No such channel (0) ' % stripped_channel_name)                                
-                            else:
-                                matches.append((skypename, channelname))
-                    if len(matches) == 1:
-                        found = False
-                        for chat in self.server.skype.Chats:
-                            if chat.Name == matches[0][0]:
-                                self._ensure_client_joined(chat)
-                                return
-                        if not found:
-                            raise IRCError.from_name('nosuchchannel',
-                                                 '%s :No such channel (0) ' % stripped_channel_name)
-                    elif len(matches) == 0:
-                        raise IRCError.from_name('nosuchchannel',
-                                                 '%s :No such channel (1) ' % stripped_channel_name)
-                    else:
-                        message = "%s :Ambiguous channel name matches [%s]" % \
-                            (stripped_channel_name, ", ".join(map(lambda p: p[1], matches)))
-                        raise IRCError.from_name('nosuchchannel', message)   
+                    the_chat = chats[0]
+                self._ensure_client_joined(the_chat)
+            else:
+                self._logger.info("user join [UNSUPPORTED!] to %s" % (channel_name))
 
     def _mark_all_chat_messages_read(self, chat):
         for message in chat.Messages:
             if message.Status == "RECEIVED":
                 message.MarkAsSeen()
 
-    def handle_privmsg(self, params):
-        # TODO(wb): send privmsg to all other connected clients
-
+    def _handle_privmsg(self, params):
         target, sep, msg = params.partition(' ')
         if not msg:
-            raise IRCError.from_name('needmoreparams',
-                'PRIVMSG :Not enough parameters')
+            raise IRCError.from_name('needmoreparams', 'PRIVMSG :Not enough parameters')
         msg = msg.lstrip(":")
 
         if target.startswith('#') or target.startswith('$'):
             self._logger.info("message to %s: %s" % (target, msg))
 
-            the_chat = None
-            for chat in self.server.skype.Chats:
-                if chat.Name == target:
-                    the_chat = chat
+            chats = self._guess_chats_from_user_channelname(target)
+            if len(chats) == 0:
+                raise IRCError.from_name('cannotsendtochan',
+                                         '%s :Cannot send to channel (DNE)' % target)
+            elif len(chats) > 1:
+                chat_list = ", ".join(map(lambda c: c.Name, chats))
+                raise IRCError.from_name('cannotsendtochan',
+                                         '%s :Cannot send to channel %s, ambiguous: [%s]' % (target, chat_list))
+            else:
+                the_chat = chats[0]
 
-            if the_chat is None:
-                names = self.get_skypename_from_friendly_channelname(target)
-                if len(names) == 0:
-                    raise IRCError.from_name('cannotsendtochan',
-                        '%s :Cannot send to channel' % target)
-                elif len(names) > 0:
-                    raise IRCError.from_name('cannotsendtochan',
-                        '%s :Cannot send to channel %s, ambiguous: [%s]' % (target, ", ".join(names)))
-                else:
-                    the_chat = names
+            for nick, client in self.server.clients.items():
+                if nick == self.nick:
+                    continue
+                # TODO: untested
+                client.send_queue.append(params)
 
-            the_chat.SendMessage(msg)
-            self._mark_all_chat_messages_read(the_chat)
+            if msg[0] == "!" and msg[1:].partition(" ")[0].lower() in self._supported_operator_commands:
+                handler = self._supported_operator_commands[msg[1:].partition(" ")[0].lower()]
+                self._queue_client_mod_message(the_chat, "Intercepted operator command: " + msg)
+                handler(the_chat, msg)
+            elif msg[0] == "!":
+                self._queue_client_mod_message(the_chat, "Intercepted operator command: " + msg)
+            else:
+                the_chat.SendMessage(msg)
+                self._mark_all_chat_messages_read(the_chat)
         else:
             self._logger.info("user message [UNSUPPORTED!] to %s: %s" % (target, msg))
 
@@ -319,74 +340,145 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         self.send_queue.append(composed)
 
     def _queue_client_mod_message(self, chat, message):
-        composed = ":%s NOTICE %s :%s" % (MOD_HANDLE, chat.Name, message)
+        composed = ":%s NOTICE %s :%s" % (MOD_HANDLE, self._get_friendly_channelname_from_chat(chat), message)
         self._logger.info("SENDING: %s" % (composed))
         self.send_queue.append(composed)
-            
-    def get_friendly_channelname_from_skypename(self, chat):
+
+    def _get_friendly_channelname_from_chat(self, chat):
         # first, try to find a previously generated name
         for skypename, channelname in self._chat_channelnames:
             if chat.Name == skypename:
                 return channelname
-                
+
         # next, try to create a nice name
         channelname = None
         members = [m for m in chat.Members]
         if len(members) == 2:
+            # this is a private chat
             if members[0] == self.server.skype.User():
-                channelname = members[1].Handle + "-priv"
+                channelname = camelcase_sentence(members[1].FullName) + "-priv"
             else:
-                channelname = members[0].Handle + "-priv"
+                channelname = camelcase_sentence(members[0].FullName) + "-priv"
+            # example: u"WilliBallenthin-priv"
         else:
+            # generic name is a Skype chat ID that simply contains
+            #  the name of one of the participants and the first
+            #  line of the chat:
+            #  for example:
+            #   u'Nick Pelletier | I think I found a good topic for MIRcon'
             is_generic_name = False
             for m in members:
                 if m.FullName in chat.FriendlyName:
                     is_generic_name = True
                     break
-            
-            if not is_generic_name:
-                channelname = chat.FriendlyName.replace(" ", "-")[:16]
+
+            if is_generic_name:
+                channelname = chat.FriendlyName.replace("|", "-")
+                channelname = camelcase_sentence(channelname)
+                # example: u'NickPelletier-IThinkIFoundAGoodTopicForMIRcon'
+            elif chat.FriendlyName != "":
+                channelname = camelcase_sentence(chat.FriendlyName)
+                # example: u'OlympicCommittee(RIP09/17/2013)'
             elif chat.Topic != "":
-                channelname = chat.Topic.replace(" ", "-")[:16]
+                channelname = camelcase_sentence(chat.Topic)
+                # example: u'PebbleWatchesWatch'
             else:
                 channelname = chat.Name
-        while True:
-            if len(self._chat_channelnames) == 0:
-                self._chat_channelnames.append((chat.Name, channelname))
-                return channelname 
-            has_conflict = False
+                # example: '#williballenthin/$xolot1;bb755632147dedddfe3'
+
+        if channelname[0] != "#":
+            channelname = "#" + channelname
+
+        if len(self._chat_channelnames) != 0:
             for skypename, existing_channelname in self._chat_channelnames:
-                if existing_channelname == channelname and skypename == chat.Name:
-                    # race with other channel, take the other one
+                if existing_channelname == channelname and \
+                        skypename == chat.Name:
+                    # must be a race with another channel, take the other one
                     return channelname
                 elif existing_channelname == channelname:
-                    # name conflict, change ours and retry
-                    channelname += "Q"
-                    has_conflict = True
-                    break
-            
-            if not has_conflict:
-                self._chat_channelnames.append((chat.Name, channelname))
-                return channelname       
-    
-    def build_all_friendly_channelnames(self):
+                    channelname += chat.Name[-16:]
+
+        self._chat_channelnames.append((chat.Name, channelname))
+        return channelname
+
+    def _precompute_all_friendly_channelnames(self):
         for chat in self.server.skype.Chats:
-            self.get_friendly_channelname_from_skypename(chat)
-        
-    def get_skypename_from_friendly_channelname(self, friendlychannelname):
-        skypenames = []
+            self._get_friendly_channelname_from_chat(chat)
+
+    def _get_skypename_from_friendly_channelname(self, friendlychannelname):
+        # TODO: consider caching here
+        self._precompute_all_friendly_channelnames()
+
         for skypename, channelname in self._chat_channelnames:
             if channelname == friendlychannelname:
-                skypenames.append(skypename)
-                
-        return skypenames
-        
-    def handle_list(self, params):
+                return skypename
+        raise KeyError("Unable to determine skypename from channelname: " + friendlychannelname)
+
+    def _get_chat_by_channelname(self, channelname):
+        """
+        aka, by Skype.Name
+        """
+        # TODO: consider caching here
+        for chat in self.server.skype.Chats:
+            if chat.Name == channelname:
+                return chat
+        raise KeyError("Unable to find Chat from channelname: " + channelname)
+
+    def _get_chat_from_friendly_channelname(self, friendlychannelname):
+        """
+        @raises KeyError: if the Chat cannot be found.
+        """
+        # TODO: consider caching here
+        channelname = self._get_skypename_from_friendly_channelname(friendlychannelname)
+        return self._get_chat_by_channelname(channelname)
+
+    def _guess_skypenames_from_user_channelname(self, userchannelname):
+        """
+        Given a channel name provided by an IRC client, get a list of
+          matching Skype channel names.
+        """
+        # TODO: consider caching here
+        try:
+            ret = [self._get_chat_from_friendly_channelname(userchannelname).Name]
+            return ret
+        except KeyError:
+            pass
+
+        matching_skypenames = []
+        matching_friendlynames = []
+        for skypename, channelname in self._chat_channelnames:
+            if userchannelname == skypename:
+                return skypename
+            if userchannelname.lstrip("#") in skypename:
+                matching_skypenames.append(skypename)
+            if userchannelname == channelname:
+                return skypename
+            if userchannelname.lstrip("#") in channelname:
+                matching_friendlynames.append(skypename)
+
+        matching_skypenames.extend(matching_friendlynames)
+        return matching_skypenames
+
+    def _guess_chats_from_user_channelname(self, userchannelname):
+        """
+        Given a channel name provided by an IRC client, get a list of
+          matching Skype Chats.
+        """
+        # TODO: consider caching here
+        ret = []
+        for channelname in self._guess_skypenames_from_user_channelname(userchannelname):
+            try:
+                ret.append(self._get_chat_by_channelname(channelname))
+            except KeyError:
+                pass
+        return ret
+
+    def _handle_list(self, params):
         self._queue_client_message(321, "NAME :FRIENDLYNAME TIMESTAMP")
-        
+
         sortable_chats = []
         unsortable_chats = []
-        
+
         for c in self.server.skype.Chats:
             try:
                 ts = c.Messagse[0].Timestamp
@@ -394,26 +486,23 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             except Exception:
                 self._logger.warn("Unable to get TS from chat")
                 unsortable_chats.append(c)
-        
+
         for chat in sorted(sortable_chats, key=lambda c: c.Messages[0].Timestamp):
             ts = datetime.datetime.fromtimestamp(chat.Messages[0].Timestamp)
-            #self._queue_client_message(322, "%s :%s %s" % (chat.Name, chat.FriendlyName, ts))
-            self._queue_client_message(322, "%s : | %s |  %s" % (self.get_friendly_channelname_from_skypename(chat), chat.FriendlyName, ts))
+            self._queue_client_message(322, "[%s] : | [%s] (%s)" % (self._get_friendly_channelname_from_chat(chat), chat.FriendlyName, ts))
         for chat in unsortable_chats:
-            #self._queue_client_message(322, "%s :%s %s" % (chat.Name, chat.FriendlyName, "UNKNOWN"))
-            self._queue_client_message(322, "%s : | %s | %s" % (self.get_friendly_channelname_from_skypename(chat), chat.FriendlyName, "UNKNOWN"))
+            self._queue_client_message(322, "[%s] : | [%s] (%s)" % (self._get_friendly_channelname_from_chat(chat), chat.FriendlyName, "UNKNOWN"))
         self._queue_client_message(323, ":End of /LIST")
         print self._chat_channelnames
-        
-    def handle_mode(self, params):
+
+    def _handle_mode(self, params):
         pass
 
     def client_ident(self):
         """
         Return the client identifier as included in many command replies.
         """
-        return client.NickMask.from_params(self.nick, self.user,
-            self.server.servername)
+        return client.NickMask.from_params(self.nick, self.user, self.server.servername)
 
     def finish(self):
         """
@@ -440,48 +529,47 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             self.realname,
             )
 
-    def _ensure_client_joined(self, chat):
-        if chat.Name not in self._joined_chats:
-            self._logger.info("joining to %s" % (chat.Name))
-            message = ":%s JOIN :%s" % (self.client_ident(), chat.Name)
-            self.send_queue.append(message)
-
-            message = ":%s TOPIC %s :%s" % (MOD_HANDLE, chat.Name, chat.FriendlyName)
-            self.send_queue.append(message)
-
-            nicks = [m.Handle for m in chat.Members]
-            self._queue_client_message(353, "= %s :%s" % (chat.Name, " ".join(nicks)))
-            self._queue_client_message(366, "%s :End of /NAMES list" % (chat.Name))
-
-            unread_messages = sorted([m for m in chat.Messages if m.Status == "RECEIVED"], key=lambda m: m.Timestamp)
-            if len(unread_messages) > 0:
-                self._queue_client_mod_message(chat, "Begin of UNREAD messages")            
-                for message in unread_messages:
-                    self._logger.info("unread message: %s %s %s" % (message.Timestamp, message.FromHandle, message.Body))
-                    ts = datetime.datetime.fromtimestamp(message.Timestamp)
-                    # TODO(wb): handle long messages
-                    # TODO(wb): handle messages with newlines
-                    for part in message.Body.split("\n"):
-                        if part.rstrip("\r\n ") == "":
-                            continue
-                        m = "<%s %s> %s" % (ts.isoformat(), message.FromHandle, part)
-                        composed = ":%s NOTICE %s :%s" % (UNREAD_HANDLE, chat.Name, m)
-                        self.send_queue.append(composed)
-                self._queue_client_mod_message(chat, "End of UNREAD messages")
-
-            self._joined_chats.add(chat.Name)
-
-    def handle_skype_incoming(self, message, status): #chat_name, user_handle, message):
+    def _handle_skype_incoming(self, message, status):
         self._ensure_client_joined(message.Chat)
 
         # TODO(wb): handle long messages
-        # TODO(wb): handle messages with newlines
-        self._logger.info("incoming message: %s %s %s" % (message.Chat.Name, message.FromHandle, message.Body))
+        self._logger.info("incoming message: %s (%s) %s %s" % (message.Chat.Name,
+                                                               self._get_friendly_channelname_from_chat(message.Chat),
+                                                               message.FromHandle, message.Body))
         for part in message.Body.split("\n"):
             if part.rstrip("\r\n ") == "":
                 continue
-            m = ":%s PRIVMSG %s :%s" % (message.FromHandle, message.Chat.Name, part)
+            m = ":%s PRIVMSG %s :%s" % (message.FromHandle, self._get_friendly_channelname_from_chat(message.Chat), part)
             self.send_queue.append(m)
+
+    def _handle_history(self, chat, message):
+        parts = message.split(" ")
+        friendlychannelname = self._get_friendly_channelname_from_chat(chat)
+        num_messages = 20
+        if len(parts) > 1:
+            try:
+                num_messages = int(parts[1])
+            except ValueError:
+                pass
+
+        messages = sorted([m for m in chat.Messages], key=lambda m: m.Timestamp)
+        if len(messages) > 0:
+            self._queue_client_mod_message(chat, "Begin of HISTORY(%d)" % (num_messages))
+            for message in messages[-num_messages:]:
+                ts = datetime.datetime.fromtimestamp(message.Timestamp)
+                # TODO(wb): handle long messages
+                # TODO(wb): handle messages with newlines
+                for part in message.Body.split("\n"):
+                    if part.rstrip("\r\n ") == "":
+                        continue
+                    m = "<%s %s> %s" % (ts.isoformat(), message.FromHandle, part)
+                    if message.Status == "RECEIVED":
+                        handle = UNREAD_HANDLE
+                    else:
+                        handle = READ_HANDLE
+                    composed = ":%s NOTICE %s :%s" % (handle, friendlychannelname, m)
+                    self.send_queue.append(composed)
+            self._queue_client_mod_message(chat, "End of HISTORY(%d)" % (num_messages))
 
 
 
@@ -497,22 +585,26 @@ class IRCServer(six.moves.socketserver.ThreadingMixIn,
         self._logger = logging.getLogger("IRCServer")
 
         self.servername = '0.0.0.0'
-        self.clients = {}
+        self.clients = {}  # map(nick --> client)
 
         self.skype = Skype()
         self.skype.Attach()
         self.skype.OnUserAuthorizationRequestReceived = self._handle_auth_req
         self.skype.OnMessageStatus = self._handle_recv_message
 
+        disable_ssl = kwargs.pop("disable_ssl")
         six.moves.socketserver.TCPServer.__init__(self, *args, **kwargs)
-        self.socket = ssl.wrap_socket(self.socket, 
-                                      keyfile="./ssl/server.key",
-                                      certfile="./ssl/serverca.pem", 
-                                      server_side=True, 
-                                      cert_reqs=ssl.CERT_REQUIRED, 
-                                      ca_certs="./ssl/clientca.pem", 
-                                      do_handshake_on_connect=True)
-
+        if not disable_ssl:
+            self._logger.info("Enabled SSL")
+            self.socket = ssl.wrap_socket(self.socket,
+                                          keyfile="./ssl/server.key",
+                                          certfile="./ssl/serverca.pem",
+                                          server_side=True,
+                                          cert_reqs=ssl.CERT_REQUIRED,
+                                          ca_certs="./ssl/clientca.pem",
+                                          do_handshake_on_connect=True)
+        else:
+            self._logger.info("Disabled SSL")
 
     def _handle_auth_req(self, user):
         self._logger.info("Received authorization request: %s" % (user))
@@ -520,7 +612,7 @@ class IRCServer(six.moves.socketserver.ThreadingMixIn,
     def _handle_recv_message(self, message, status):
         if status == Skype4Py.cmsReceived:
             for client in self.clients.values():
-                client.handle_skype_incoming(message, status)
+                client._handle_skype_incoming(message, status)
 
 
 def main():
@@ -531,7 +623,7 @@ def main():
     port = 6667
 
     try:
-        ircserver = IRCServer((address, port), IRCClient)
+        ircserver = IRCServer((address, port), IRCClient, disable_ssl="--disable_ssl" in sys.argv)
         logger.info("Server started on %s:%d" % (address, port))
         ircserver.serve_forever()
     except socket.error as e:
@@ -539,8 +631,7 @@ def main():
         raise SystemExit(-2)
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "profile":
+    if "--profile" in sys.argv:
         import cProfile
         cProfile.run("main()")
     else:
