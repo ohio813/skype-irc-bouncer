@@ -363,10 +363,15 @@ class IRCClient(socketserver.BaseRequestHandler):
         members = [m for m in chat.Members]
         if len(members) == 2:
             # this is a private chat
-            if members[0] == self.server.skype.User():
-                channelname = camelcase_sentence(members[1].FullName) + "-priv"
+            other_user = members[0]
+            if other_user == self.server.skype.User():
+                other_user = members[1]
+            if other_user.FullName.strip(" \t\n") != "":
+                channelname = other_user.FullName
             else:
-                channelname = camelcase_sentence(members[0].FullName) + "-priv"
+                channelname = other_user.Handle
+            channelname += "-priv"
+            channelname = camelcase_sentence(channelname)
             # example: u"WilliBallenthin-priv"
         else:
             # generic name is a Skype chat ID that simply contains
