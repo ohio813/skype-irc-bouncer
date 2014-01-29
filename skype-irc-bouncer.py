@@ -9,6 +9,7 @@
 import sys
 import re
 import ssl
+import time
 import socket
 import select
 import logging
@@ -20,6 +21,8 @@ import six
 from irc import events
 from irc import client
 from irc import buffer
+
+import CustomSocketServer as socketserver
 
 MOD_HANDLE = "[MOD]"
 UNREAD_HANDLE = "UNREAD"
@@ -65,7 +68,7 @@ class IRCError(Exception):
         return cls(events.codes[name], value)
 
 
-class IRCClient(six.moves.socketserver.BaseRequestHandler):
+class IRCClient(socketserver.BaseRequestHandler):
     """
     IRC client connect and command handling. Client connection is handled by
     the `handle` method which sets up a two-way communication with the client.
@@ -96,7 +99,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         self._supported_operator_commands = {
             "history": self._handle_history,
             }
-        six.moves.socketserver.BaseRequestHandler.__init__(self, request,
+        socketserver.BaseRequestHandler.__init__(self, request,
                                                            client_address,
                                                            server)
 
@@ -107,7 +110,8 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
 
         try:
             while True:
-                self._handle_one()
+                if not self._handle_one():
+                    time.sleep(0.1)
         except self.Disconnect:
             self.request.close()
 
@@ -121,14 +125,18 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         if in_error:
             raise self.Disconnect()
 
+        did_something = False
         # Write any commands to the client
         while self.send_queue and ready_to_write:
             msg = self.send_queue.pop(0)
             self._send(msg)
+            did_something = True
 
         # See if the client has any commands for us.
         if ready_to_read:
             self._handle_incoming()
+            did_something = True
+        return did_something
 
     def _handle_incoming(self):
         try:
@@ -573,8 +581,8 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
 
 
 
-class IRCServer(six.moves.socketserver.ThreadingMixIn,
-                six.moves.socketserver.TCPServer):
+class IRCServer(socketserver.ThreadingMixIn,
+                socketserver.TCPServer):
     daemon_threads = True
     allow_reuse_address = True
 
@@ -593,7 +601,7 @@ class IRCServer(six.moves.socketserver.ThreadingMixIn,
         self.skype.OnMessageStatus = self._handle_recv_message
 
         disable_ssl = kwargs.pop("disable_ssl")
-        six.moves.socketserver.TCPServer.__init__(self, *args, **kwargs)
+        socketserver.TCPServer.__init__(self, *args, **kwargs)
         if not disable_ssl:
             self._logger.info("Enabled SSL")
             self.socket = ssl.wrap_socket(self.socket,
@@ -632,7 +640,12 @@ def main():
 
 if __name__ == "__main__":
     if "--profile" in sys.argv:
-        import cProfile
-        cProfile.run("main()")
+        import yappi
+        try:
+            yappi.start()
+            main()
+        finally:
+            yappi.get_func_stats().print_all()
+            yappi.get_thread_stats().print_all()
     else:
         main()
