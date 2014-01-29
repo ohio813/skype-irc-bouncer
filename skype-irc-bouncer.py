@@ -9,6 +9,7 @@
 import sys
 import re
 import ssl
+import time
 import socket
 import select
 import logging
@@ -107,7 +108,8 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
 
         try:
             while True:
-                self._handle_one()
+                if not self._handle_one():
+                    time.sleep(0.1)
         except self.Disconnect:
             self.request.close()
 
@@ -118,6 +120,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         ready_to_read, ready_to_write, in_error = select.select(
             [self.request], [self.request], [self.request], 0.1)
 
+        did_handle = False
         if in_error:
             raise self.Disconnect()
 
@@ -125,10 +128,14 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         while self.send_queue and ready_to_write:
             msg = self.send_queue.pop(0)
             self._send(msg)
+            did_handle = True
 
         # See if the client has any commands for us.
         if ready_to_read:
             self._handle_incoming()
+            did_handle = True
+
+        return did_handle
 
     def _handle_incoming(self):
         try:
