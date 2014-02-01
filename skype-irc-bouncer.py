@@ -199,6 +199,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             "user": self._handle_user,
             "ping": self._handle_ping,
             "join": self._handle_join,
+            "part": self._handle_part,
             "privmsg": self._handle_privmsg,
             "mode": self._handle_mode,
             }
@@ -433,6 +434,28 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
                 self._ensure_joined_chat(the_chat)
             else:
                 self._logger.info("user join [UNSUPPORTED!] to %s" % (channel_name))
+
+    def _handle_part(self, params):
+        channel_names = params.split(" ", 1 )[0]
+        for channel_name in channel_names.split(","):
+            channel_name = channel_name.strip()
+            self._logger.info("Request to PART %s", channel_name)
+
+            if channel_name.startswith('#') or channel_name.startswith('$'):
+                chats = self._guess_chats_from_user_channelname(channel_name)
+                if len(chats) == 0:
+                    raise IRCError.from_name('nosuchchannel',
+                                             '%s :Cannot PART channel (DNE)' % channel_name)
+                elif len(chats) > 1:
+                    chat_list = ", ".join(map(lambda c: c.Name, chats))
+                    raise IRCError.from_name('nosuchchannel',
+                                             '%s :Cannot PART channel %s, ambiguous: [%s]' % (channel_name, channel_name, chat_list))
+                else:
+                    the_chat = chats[0]
+                self._joined_chats.remove(the_chat.Name)
+            else:
+                self._logger.info("user PART [UNSUPPORTED!] %s" % (channel_name))
+
 
     def _mark_all_chat_messages_read(self, chat):
         for message in chat.Messages:
