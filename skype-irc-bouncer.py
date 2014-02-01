@@ -66,6 +66,28 @@ class IRCError(Exception):
         return cls(events.codes[name], value)
 
 
+def ensure_client_joined_unread_chats_operation(client):
+        for chat in client._get_unread_chats():
+            client._ensure_joined_chat(chat)
+
+
+class IRCClientModule(object):
+    def __init__(self, client):
+        self._client = client
+
+    def get_irc_handlers():
+        """
+        Return sequence of ("irc-command", function)
+        """
+        return []
+
+    def get_bang_handlers():
+        """
+        Return sequence of ("bang-command", function)
+        """
+        return []
+
+
 class IRCClient(six.moves.socketserver.BaseRequestHandler):
     """
     IRC client connect and command handling. Client connection is handled by
@@ -93,6 +115,8 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             "privmsg": self._handle_privmsg,
             "list": self._handle_list,
             "mode": self._handle_mode,
+
+            # custom extensions
             "unread": self._handle_unread,
             "clear_unread": self._handle_clear_unread,
             }
@@ -103,6 +127,12 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
                                                            client_address,
                                                            server)
 
+    def install_client_module(self, module_cls):
+        module = module_cls(self)
+        for cmd, fn in module.get_irc_handlers():
+            self._supported_irc_commands[cmd] = fn
+        for cmd, fn in module.get_bang_handlers():
+            self._supported_operator_commands[cmd] = fn
 
     def handle(self):
         self._logger.info('Client connected: %s', self.client_ident())
@@ -528,7 +558,6 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         for chat in unsortable_chats:
             self._queue_irc_message(322, "[%s] : | [%s] (%s)" % (self._get_friendly_channelname_from_chat(chat), chat.FriendlyName, "UNKNOWN"))
         self._queue_irc_message(323, ":End of /LIST")
-        print self._chat_channelnames
 
     def _handle_unread(self, params):
         self._queue_irc_message(321, "COUNT :NAME")
