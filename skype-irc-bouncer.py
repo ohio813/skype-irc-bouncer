@@ -75,7 +75,6 @@ class IRCClientModule(object):
     def __init__(self, client):
         super(IRCClientModule, self).__init__()
         self._client = client
-        print client
 
     def get_irc_handlers(self):
         """
@@ -106,7 +105,7 @@ class HandleUnreadModule(IRCClientModule):
 
 class HandleClearUnreadModule(IRCClientModule):
     def __init__(self, client):
-        super(HandleClientUnreadModule, self).__init__(client)
+        super(HandleClearUnreadModule, self).__init__(client)
 
     def get_irc_handlers(self):
         return [("clear_unread", self._handle_clear_unread)]
@@ -127,7 +126,7 @@ class HandleHistoryModule(IRCClientModule):
     def get_bang_handlers(self):
         return [("history", self._handle_history)]
 
-     def _handle_history(self, chat, message):
+    def _handle_history(self, chat, message):
         parts = message.split(" ")
         friendlychannelname = self._client.get_friendly_channelname_from_chat(chat)
         num_messages = 20
@@ -157,6 +156,25 @@ class HandleHistoryModule(IRCClientModule):
             self._client.queue_mod_message(chat, "End of HISTORY(%d)" % (num_messages))
 
 
+class HandleListModule(IRCClientModule):
+    def __init__(self, client):
+        super(HandleListModule, self).__init__(client)
+
+    def get_irc_handlers(self):
+        return [("list", self._handle_list)]
+
+    def _handle_list(self, params):
+        self._client.queue_irc_message(321, "NAME :FRIENDLYNAME TIMESTAMP")
+
+        sortable_chats = []
+        unsortable_chats = []
+
+        for chat in self._client.server.skype.Chats:
+            self._client.queue_irc_message(322, "[%s] : | [%s]" % \
+               (self._client.get_friendly_channelname_from_chat(chat), chat.FriendlyName))
+        self._client.queue_irc_message(323, ":End of /LIST") 
+
+
 class IRCClient(six.moves.socketserver.BaseRequestHandler):
     """
     IRC client connect and command handling. Client connection is handled by
@@ -182,15 +200,13 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             "ping": self._handle_ping,
             "join": self._handle_join,
             "privmsg": self._handle_privmsg,
-            "list": self._handle_list,
             "mode": self._handle_mode,
             }
-        self._supported_bang_commands = {
-            "history": self._handle_history,
-            }
+        self._supported_bang_commands = { }
 
         self.install_client_module(HandleUnreadModule)
         self.install_client_module(HandleClearUnreadModule)
+        self.install_client_module(HandleListModule)
 
         self.install_client_module(HandleHistoryModule)
 
@@ -608,28 +624,6 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             except KeyError:
                 pass
         return ret
-
-    def _handle_list(self, params):
-        self.queue_irc_message(321, "NAME :FRIENDLYNAME TIMESTAMP")
-
-        sortable_chats = []
-        unsortable_chats = []
-
-        for c in self.server.skype.Chats:
-            try:
-                ts = c.Messagse[0].Timestamp
-                sortable_chats.append(c)
-            except Exception:
-                self._logger.warn("Unable to get TS from chat")
-                unsortable_chats.append(c)
-
-        for chat in sorted(sortable_chats, key=lambda c: c.Messages[0].Timestamp):
-            ts = datetime.datetime.fromtimestamp(chat.Messages[0].Timestamp)
-            self.queue_irc_message(322, "[%s] : | [%s] (%s)" % (self.get_friendly_channelname_from_chat(chat), chat.FriendlyName, ts))
-        for chat in unsortable_chats:
-            self.queue_irc_message(322, "[%s] : | [%s] (%s)" % (self.get_friendly_channelname_from_chat(chat), chat.FriendlyName, "UNKNOWN"))
-        self.queue_irc_message(323, ":End of /LIST")
-
     def _handle_mode(self, params):
         pass
 
