@@ -420,7 +420,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         if channelname[0] != "#":
             channelname = "#" + channelname
 
-       channelname = channelname.replace(",", "-")
+        channelname = channelname.replace(",", "-")
 
         if len(self._chat_channelnames) != 0:
             for skypename, existing_channelname in self._chat_channelnames:
