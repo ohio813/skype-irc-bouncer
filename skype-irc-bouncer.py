@@ -182,6 +182,10 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         self._logger.debug('to %s: %s', self.client_ident(), msg)
         self.request.send(msg.encode('utf-8') + b'\r\n')
 
+    def _ensure_joined_unread_chats(self):
+        for chat in self._get_unread_chats():
+            self._ensure_joined_chat(chat)
+
     def _handle_nick(self, params):
         """
         Handle the initial setting of the user's nickname and nick changes.
@@ -221,7 +225,8 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         self.server.clients[self.nick] = self
 
         # Send a notification of the nick change to the client itself
-        return message
+        self.send_queue.append(message)
+        self._ensure_joined_unread_chats()
 
     def _handle_user(self, params):
         """
@@ -246,7 +251,20 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         response = ':%s PONG :%s' % (self.server.servername, self.server.servername)
         return response
 
-    def _ensure_client_joined(self, chat):
+    def _get_unread_chats(self):
+        ret = []
+        for chat in self.server.skype.Chats:
+            for message in self._get_unread_messages(chat):
+                ret.append(chat)
+                break
+        return ret
+
+    def _get_unread_messages(self, chat):
+        for message in chat.Messages:
+            if message.Status == "RECEIVED":
+                yield message
+
+    def _ensure_joined_chat(self, chat):
         if chat.Name not in self._joined_chats:
             friendlychannelname = self._get_friendly_channelname_from_chat(chat)
             self._logger.info("joining to %s (%s)" % (chat.Name, friendlychannelname))
@@ -260,7 +278,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             self._queue_client_message(353, "= %s :%s" % (friendlychannelname, " ".join(nicks)))
             self._queue_client_message(366, "%s :End of /NAMES list" % (friendlychannelname))
 
-            unread_messages = sorted([m for m in chat.Messages if m.Status == "RECEIVED"], key=lambda m: m.Timestamp)
+            unread_messages = sorted([m for m in self._get_unread_messages(chat)], key=lambda m: m.Timestamp)
             if len(unread_messages) > 0:
                 self._queue_client_mod_message(chat, "Begin of UNREAD messages")
                 for message in unread_messages:
@@ -294,7 +312,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
                                              '%s :Cannot join to channel %s, ambiguous: [%s]' % (channel_name, channel_name, chat_list))
                 else:
                     the_chat = chats[0]
-                self._ensure_client_joined(the_chat)
+                self._ensure_joined_chat(the_chat)
             else:
                 self._logger.info("user join [UNSUPPORTED!] to %s" % (channel_name))
 
@@ -542,7 +560,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             )
 
     def _handle_skype_incoming(self, message, status):
-        self._ensure_client_joined(message.Chat)
+        self._ensure_joined_chat(message.Chat)
 
         # TODO(wb): handle long messages
         self._logger.info("incoming message: %s (%s) %s %s" % (message.Chat.Name,
