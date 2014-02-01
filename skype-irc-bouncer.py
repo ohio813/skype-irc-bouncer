@@ -104,6 +104,59 @@ class HandleUnreadModule(IRCClientModule):
         self._client.queue_irc_message(323, ":End of !unread")
 
 
+class HandleClearUnreadModule(IRCClientModule):
+    def __init__(self, client):
+        super(HandleClientUnreadModule, self).__init__(client)
+
+    def get_irc_handlers(self):
+        return [("clear_unread", self._handle_clear_unread)]
+
+    def _handle_clear_unread(self, params):
+        self._client.queue_irc_message(321, "Beginning :to clear unread messages")
+        for chat in self._client.get_unread_chats():
+            for message in self._client.get_unread_messages(chat):
+                message.MarkAsSeen()
+            self._client.queue_irc_message(322, "  cleared: %s" % (self._client.get_friendly_channelname_from_chat(chat)))
+        self._client.queue_irc_message(323, ":End of clear unread")
+
+
+class HandleHistoryModule(IRCClientModule):
+    def __init__(self, client):
+        super(HandleHistoryModule, self).__init__(client)
+
+    def get_bang_handlers(self):
+        return [("history", self._handle_history)]
+
+     def _handle_history(self, chat, message):
+        parts = message.split(" ")
+        friendlychannelname = self._client.get_friendly_channelname_from_chat(chat)
+        num_messages = 20
+        if len(parts) > 1:
+            try:
+                num_messages = int(parts[1])
+            except ValueError:
+                pass
+
+        messages = sorted([m for m in chat.Messages], key=lambda m: m.Timestamp)
+        if len(messages) > 0:
+            self._client.queue_mod_message(chat, "Begin of HISTORY(%d)" % (num_messages))
+            for message in messages[-num_messages:]:
+                ts = datetime.datetime.fromtimestamp(message.Timestamp)
+                # TODO(wb): handle long messages
+                # TODO(wb): handle messages with newlines
+                for part in message.Body.split("\n"):
+                    if part.rstrip("\r\n ") == "":
+                        continue
+                    m = "<%s %s> %s" % (ts.isoformat(), message.FromHandle, part)
+                    if message.Status == "RECEIVED":
+                        handle = UNREAD_HANDLE
+                    else:
+                        handle = READ_HANDLE
+                    composed = ":%s NOTICE %s :%s" % (handle, friendlychannelname, m)
+                    self._client.queue_message(composed)
+            self._client.queue_mod_message(chat, "End of HISTORY(%d)" % (num_messages))
+
+
 class IRCClient(six.moves.socketserver.BaseRequestHandler):
     """
     IRC client connect and command handling. Client connection is handled by
@@ -131,15 +184,15 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             "privmsg": self._handle_privmsg,
             "list": self._handle_list,
             "mode": self._handle_mode,
-
-            # custom extensions
-            "clear_unread": self._handle_clear_unread,
             }
-        self._supported_operator_commands = {
+        self._supported_bang_commands = {
             "history": self._handle_history,
             }
 
         self.install_client_module(HandleUnreadModule)
+        self.install_client_module(HandleClearUnreadModule)
+
+        self.install_client_module(HandleHistoryModule)
 
         six.moves.socketserver.BaseRequestHandler.__init__(self, request,
                                                            client_address,
@@ -150,7 +203,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         for cmd, fn in module.get_irc_handlers():
             self._supported_irc_commands[cmd] = fn
         for cmd, fn in module.get_bang_handlers():
-            self._supported_operator_commands[cmd] = fn
+            self._supported_bang_commands[cmd] = fn
 
     def handle(self):
         self._logger.info('Client connected: %s', self.client_ident())
@@ -261,10 +314,10 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             self.server.clients[nick] = self
             response = ':%s %s %s :%s' % (self.server.servername,
                 events.codes['welcome'], self.nick, SRV_WELCOME)
-            self._queue_message(response)
+            self.queue_message(response)
             response = ':%s 376 %s :End of MOTD command.' % (
                 self.server.servername, self.nick)
-            self._queue_message(response)
+            self.queue_message(response)
             self._ensure_joined_unread_chats()
             return
 
@@ -319,10 +372,10 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             friendlychannelname = self.get_friendly_channelname_from_chat(chat)
             self._logger.info("joining to %s (%s)" % (chat.Name, friendlychannelname))
             message = ":%s JOIN :%s" % (self.client_ident(), friendlychannelname) 
-            self._queue_message(message)
+            self.queue_message(message)
 
             message = ":%s TOPIC %s :%s" % (MOD_HANDLE, friendlychannelname, chat.FriendlyName)
-            self._queue_message(message)
+            self.queue_message(message)
 
             nicks = [m.Handle for m in chat.Members]
             self.queue_irc_message(353, "= %s :%s" % (friendlychannelname, " ".join(nicks)))
@@ -330,7 +383,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
 
             unread_messages = sorted([m for m in self.get_unread_messages(chat)], key=lambda m: m.Timestamp)
             if len(unread_messages) > 0:
-                self._queue_client_mod_message(chat, "Begin of UNREAD messages")
+                self.queue_mod_message(chat, "Begin of UNREAD messages")
                 for message in unread_messages:
                     ts = datetime.datetime.fromtimestamp(message.Timestamp)
                     # TODO(wb): handle long messages
@@ -340,8 +393,8 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
                             continue
                         m = "<%s %s> %s" % (ts.isoformat(), message.FromHandle, part)
                         composed = ":%s NOTICE %s :%s" % (UNREAD_HANDLE, friendlychannelname, m)
-                        self._queue_message(composed)
-                self._queue_client_mod_message(chat, "End of UNREAD messages")
+                        self.queue_message(composed)
+                self.queue_mod_message(chat, "End of UNREAD messages")
             self._joined_chats.add(chat.Name)
 
     def _handle_join(self, params):
@@ -396,29 +449,29 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
                 # TODO: untested
                 client.send_queue.append(params)
 
-            if msg[0] == "!" and msg[1:].partition(" ")[0].lower() in self._supported_operator_commands:
-                handler = self._supported_operator_commands[msg[1:].partition(" ")[0].lower()]
-                self._queue_client_mod_message(the_chat, "Intercepted operator command: " + msg)
+            if msg[0] == "!" and msg[1:].partition(" ")[0].lower() in self._supported_bang_commands:
+                handler = self._supported_bang_commands[msg[1:].partition(" ")[0].lower()]
+                self.queue_mod_message(the_chat, "Intercepted operator command: " + msg)
                 handler(the_chat, msg)
             elif msg[0] == "!":
-                self._queue_client_mod_message(the_chat, "Intercepted operator command: " + msg)
+                self.queue_mod_message(the_chat, "Intercepted operator command: " + msg)
             else:
                 the_chat.SendMessage(msg)
                 self._mark_all_chat_messages_read(the_chat)
         else:
             self._logger.info("user message [UNSUPPORTED!] to %s: %s" % (target, msg))
 
-    def _queue_message(self, message):
+    def queue_message(self, message):
         self._logger.info("SENDING: %s" % (message))
         self.send_queue.append(message)
 
     def queue_irc_message(self, id_, message):
         composed = ":%s %d %s %s" % (self.server.servername, id_, self.client_ident(), message)
-        self._queue_message(composed)
+        self.queue_message(composed)
 
-    def _queue_client_mod_message(self, chat, message):
+    def queue_mod_message(self, chat, message):
         composed = ":%s NOTICE %s :%s" % (MOD_HANDLE, self.get_friendly_channelname_from_chat(chat), message)
-        self._queue_message(composed)
+        self.queue_message(composed)
 
     def get_friendly_channelname_from_chat(self, chat):
         # first, try to find a previously generated name
@@ -577,14 +630,6 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             self.queue_irc_message(322, "[%s] : | [%s] (%s)" % (self.get_friendly_channelname_from_chat(chat), chat.FriendlyName, "UNKNOWN"))
         self.queue_irc_message(323, ":End of /LIST")
 
-    def _handle_clear_unread(self, params):
-        self.queue_irc_message(321, "Beginning :to clear unread messages")
-        for chat in self.get_unread_chats():
-            for message in self.get_unread_messages(chat):
-                message.MarkAsSeen()
-            self.queue_irc_message(322, "  cleared: %s" % (self.get_friendly_channelname_from_chat(chat)))
-        self.queue_irc_message(323, ":End of clear unread")
-
     def _handle_mode(self, params):
         pass
 
@@ -630,36 +675,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             if part.rstrip("\r\n ") == "":
                 continue
             m = ":%s PRIVMSG %s :%s" % (message.FromHandle, self.get_friendly_channelname_from_chat(message.Chat), part)
-            self._queue_message(m)
-
-    def _handle_history(self, chat, message):
-        parts = message.split(" ")
-        friendlychannelname = self.get_friendly_channelname_from_chat(chat)
-        num_messages = 20
-        if len(parts) > 1:
-            try:
-                num_messages = int(parts[1])
-            except ValueError:
-                pass
-
-        messages = sorted([m for m in chat.Messages], key=lambda m: m.Timestamp)
-        if len(messages) > 0:
-            self._queue_client_mod_message(chat, "Begin of HISTORY(%d)" % (num_messages))
-            for message in messages[-num_messages:]:
-                ts = datetime.datetime.fromtimestamp(message.Timestamp)
-                # TODO(wb): handle long messages
-                # TODO(wb): handle messages with newlines
-                for part in message.Body.split("\n"):
-                    if part.rstrip("\r\n ") == "":
-                        continue
-                    m = "<%s %s> %s" % (ts.isoformat(), message.FromHandle, part)
-                    if message.Status == "RECEIVED":
-                        handle = UNREAD_HANDLE
-                    else:
-                        handle = READ_HANDLE
-                    composed = ":%s NOTICE %s :%s" % (handle, friendlychannelname, m)
-                    self._queue_message(composed)
-            self._queue_client_mod_message(chat, "End of HISTORY(%d)" % (num_messages))
+            self.queue_message(m)
 
 
 
