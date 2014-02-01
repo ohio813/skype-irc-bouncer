@@ -94,6 +94,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             "list": self._handle_list,
             "mode": self._handle_mode,
             "unread": self._handle_unread,
+            "clear_unread": self._handle_clear_unread,
             }
         self._supported_operator_commands = {
             "history": self._handle_history,
@@ -534,6 +535,14 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         for chat in self._get_unread_chats():
             self._queue_irc_message(322, "(%d)   [%s]" % (len([m for m in self._get_unread_messages(chat)]), self._get_friendly_channelname_from_chat(chat)))
         self._queue_irc_message(323, ":End of !unread")
+
+    def _handle_clear_unread(self, params):
+        self._queue_irc_message(321, "Beginning :to clear unread messages")
+        for chat in self._get_unread_chats():
+            for message in self._get_unread_messages(chat):
+                message.MarkAsSeen()
+            self._queue_irc_message(322, "  cleared: %s" % (self._get_friendly_channelname_from_chat(chat)))
+        self._queue_irc_message(323, ":End of clear unread")
 
     def _handle_mode(self, params):
         pass
