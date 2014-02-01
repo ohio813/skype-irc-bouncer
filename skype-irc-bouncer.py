@@ -93,10 +93,10 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             "privmsg": self._handle_privmsg,
             "list": self._handle_list,
             "mode": self._handle_mode,
+            "unread": self._handle_unread,
             }
         self._supported_operator_commands = {
             "history": self._handle_history,
-            "unread": self._handle_unread,
             }
         six.moves.socketserver.BaseRequestHandler.__init__(self, request,
                                                            client_address,
@@ -526,7 +526,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         self._queue_client_message(323, ":End of /LIST")
         print self._chat_channelnames
 
-    def _handle_unread(self, message):
+    def _handle_unread(self, params):
         self._queue_client_message(321, "COUNT :NAME")
         for chat in self._get_unread_chats():
             self._queue_client_message(322, "(%d)   [%s]" % (len([m for m in self._get_unread_messages(chat)]), self._get_friendly_channelname_from_chat(chat)))
