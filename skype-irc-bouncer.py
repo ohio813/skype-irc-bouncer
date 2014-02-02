@@ -22,6 +22,8 @@ from irc import events
 from irc import client
 from irc import buffer
 
+import CustomSocketServer as socketserver
+
 MOD_HANDLE = "[MOD]"
 UNREAD_HANDLE = "UNREAD"
 READ_HANDLE = "READ"
@@ -66,6 +68,7 @@ class IRCError(Exception):
         return cls(events.codes[name], value)
 
 
+<<<<<<< HEAD
 def ensure_client_joined_unread_chats_operation(client):
         for chat in client.get_unread_chats():
             client._ensure_joined_chat(chat)
@@ -244,6 +247,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         if in_error:
             raise self.Disconnect()
 
+        did_something = False
         # Write any commands to the client
         while self.send_queue and ready_to_write:
             msg = self.send_queue.pop(0)
@@ -696,8 +700,8 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
 
 
 
-class IRCServer(six.moves.socketserver.ThreadingMixIn,
-                six.moves.socketserver.TCPServer):
+class IRCServer(socketserver.ThreadingMixIn,
+                socketserver.TCPServer):
     daemon_threads = True
     allow_reuse_address = True
 
@@ -716,7 +720,7 @@ class IRCServer(six.moves.socketserver.ThreadingMixIn,
         self.skype.OnMessageStatus = self._handle_recv_message
 
         disable_ssl = kwargs.pop("disable_ssl")
-        six.moves.socketserver.TCPServer.__init__(self, *args, **kwargs)
+        socketserver.TCPServer.__init__(self, *args, **kwargs)
         if not disable_ssl:
             self._logger.info("Enabled SSL")
             self.socket = ssl.wrap_socket(self.socket,
@@ -755,7 +759,12 @@ def main():
 
 if __name__ == "__main__":
     if "--profile" in sys.argv:
-        import cProfile
-        cProfile.run("main()")
+        import yappi
+        try:
+            yappi.start()
+            main()
+        finally:
+            yappi.get_func_stats().print_all()
+            yappi.get_thread_stats().print_all()
     else:
         main()
