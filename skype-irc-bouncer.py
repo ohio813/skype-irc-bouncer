@@ -489,7 +489,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
                 if nick == self.nick:
                     continue
                 # TODO: untested
-                client.send_queue.append(params)
+                client.send_queue.append(":%s PRIVMSG %S" % (self.nick, params))
 
             if msg[0] == "!" and msg[1:].partition(" ")[0].lower() in self._supported_bang_commands:
                 handler = self._supported_bang_commands[msg[1:].partition(" ")[0].lower()]
