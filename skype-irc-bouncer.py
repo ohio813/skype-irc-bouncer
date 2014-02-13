@@ -68,7 +68,6 @@ class IRCError(Exception):
         return cls(events.codes[name], value)
 
 
-<<<<<<< HEAD
 def ensure_client_joined_unread_chats_operation(client):
         for chat in client.get_unread_chats():
             client._ensure_joined_chat(chat)
@@ -567,6 +566,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             channelname = "#" + channelname
 
         channelname = channelname.replace(",", "-")
+        channelname = channelname.replace(":", "-")
 
         if len(self._chat_channelnames) != 0:
             for skypename, existing_channelname in self._chat_channelnames:
