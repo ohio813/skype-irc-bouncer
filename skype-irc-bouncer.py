@@ -22,7 +22,6 @@ from irc import events
 from irc import client
 from irc import buffer
 
-import CustomSocketServer as socketserver
 
 MOD_HANDLE = "[MOD]"
 UNREAD_HANDLE = "UNREAD"
@@ -700,8 +699,8 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
 
 
 
-class IRCServer(socketserver.ThreadingMixIn,
-                socketserver.TCPServer):
+class IRCServer(six.moves.socketserver.ThreadingMixIn,
+                six.moves.socketserver.TCPServer):
     daemon_threads = True
     allow_reuse_address = True
 
@@ -720,7 +719,7 @@ class IRCServer(socketserver.ThreadingMixIn,
         self.skype.OnMessageStatus = self._handle_recv_message
 
         disable_ssl = kwargs.pop("disable_ssl")
-        socketserver.TCPServer.__init__(self, *args, **kwargs)
+        six.moves.socketserver.TCPServer.__init__(self, *args, **kwargs)
         if not disable_ssl:
             self._logger.info("Enabled SSL")
             self.socket = ssl.wrap_socket(self.socket,
