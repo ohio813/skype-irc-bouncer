@@ -176,6 +176,18 @@ class HandleListModule(IRCClientModule):
         self._client.queue_irc_message(323, ":End of /LIST") 
 
 
+class HandleJoinallModule(IRCClientModule):
+    def __init__(self, client):
+       super(HandleJoinallModule, self).__init__(client)
+
+    def get_irc_handlers(self):
+        return [("joinall", self._handle_joinall)]
+
+    def _handle_joinall(self, params):
+        for chat in self._client.get_unread_chats():
+            self._client._ensure_joined_chat(chat)
+
+
 class IRCClient(six.moves.socketserver.BaseRequestHandler):
     """
     IRC client connect and command handling. Client connection is handled by
@@ -209,6 +221,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
         self.install_client_module(HandleUnreadModule)
         self.install_client_module(HandleClearUnreadModule)
         self.install_client_module(HandleListModule)
+        self.install_client_module(HandleJoinallModule)
 
         self.install_client_module(HandleHistoryModule)
 
@@ -337,7 +350,6 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
             response = ':%s 376 %s :End of MOTD command.' % (
                 self.server.servername, self.nick)
             self.queue_message(response)
-            self._ensure_joined_unread_chats()
             return
 
         # Nick is available. Change the nick.
@@ -635,7 +647,7 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
                 matching_friendlynames.append(skypename)
 
         matching_skypenames.extend(matching_friendlynames)
-        return matching_skypenames
+        return list(set(matching_skypenames))
 
     def _guess_chats_from_user_channelname(self, userchannelname):
         """
@@ -649,7 +661,8 @@ class IRCClient(six.moves.socketserver.BaseRequestHandler):
                 ret.append(self._get_chat_by_channelname(channelname))
             except KeyError:
                 pass
-        return ret
+        return list(set(ret))
+
     def _handle_mode(self, params):
         pass
 
