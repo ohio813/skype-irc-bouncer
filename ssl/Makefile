@@ -4,7 +4,7 @@ file.srl:
 
 
 ca.pem: file.srl
-	openssl req -keyout ca.key -out ca.pem -new -x509 -config ca.config
+	openssl req -keyout ca.key -out ca.pem -new -x509 -days 365 -config ca.config
 
 
 server.key:
@@ -16,7 +16,7 @@ server.req: server.key
 
 
 server.pem: server.req ca.pem
-	openssl x509 -req -in server.req -CA ca.pem -CAkey ca.key -CAserial file.srl -out server.pem
+	openssl x509 -req -in server.req -CA ca.pem -CAkey ca.key -CAserial file.srl -days 365 -out server.pem
 
 
 client.key:
@@ -28,7 +28,7 @@ client.req: client.key
 
 
 client.pem: client.req ca.pem
-	openssl x509 -req -in client.req -CA ca.pem -CAkey ca.key -CAserial file.srl -out client.pem
+	openssl x509 -req -in client.req -CA ca.pem -CAkey ca.key -CAserial file.srl -days 365 -out client.pem
 
 
 serverca.pem: server.pem ca.pem
