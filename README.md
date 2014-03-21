@@ -30,8 +30,8 @@ Setup
      - cat ca.pem >> clientca.pem
      - cat clientca.pem > nick.pem
      - cat client.key >> nick.pem
-  - configure IRC client certs http://www.oftc.net/NickServ/CertFP/
-  - start skype
   - virtualenv: `virtualenv .`
   - install reqs: `bin/pip install -r requirements.txt`
+  - start skype
   - start server: `bin/python skype-irc-bouncer.py`
+  - configure IRC client certs http://www.oftc.net/NickServ/CertFP/
